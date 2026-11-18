@@ -62,7 +62,7 @@ const KEYS: Key[] = [
   { ...base, pos: [-0.2, 45.9, 18.3], look: [-0.2, 0, -6.15], survey: 1, dim: 0.75, shiftX: 0.15, shiftY: 0.05, fog: [40, 90] },
   { ...base, pos: [-0.2, 68.6, 21.6], look: [-0.2, 0, -6.15], lots: 1, survey: 0.15, focus: 1, dim: 0.9, shiftX: 0.25, shiftY: 0.06, fog: [60, 125] },
   { ...base, pos: [-0.2, 29.3, 44.5], look: [-0.2, 0, -6.15], lots: 1, focus: 1, build: 1, dim: 0.95, shiftX: 0.18, shiftY: 0.06, fog: [45, 110] },
-  { ...base, pos: [35.2, 35, 35.6], look: [35.2, 0, -6.15], lots: 1, build: 1, lift: 1, own: 1, focus: 0.6, dim: 0.95, shiftX: 0.12, shiftY: 0.02, fog: [40, 95] },
+  { ...base, pos: [35.2, 35, 35.6], look: [35.2, 0, -6.15], lots: 1, build: 1, lift: 1, own: 1, focus: 0.6, dim: 0.95, shiftX: 0.07, shiftY: 0.02, fog: [40, 95] },
   { ...base, pos: [36, 22, 40], look: [36, 0, -6.15], build: 1, lift: 1, own: 1, dim: 0.38, rest: 1, fog: [35, 90] },
 ];
 

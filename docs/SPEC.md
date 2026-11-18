@@ -242,11 +242,11 @@ No video ships (decided in docs/SCROLL-SCRIPT.md section 4). The Build step uses
 - [x] Deployed to Cloudflare Workers (see section 12)
 - [x] Scroll script written: docs/SCROLL-SCRIPT.md. It now supersedes sections 4 (stage table), 5 (section order) and 6 (copy) where they differ. The script is the source of truth for beats, stage keys, drivers, lots and copy.
 - [x] Scroll script implemented in full (P0, P1, P2): 8 lots wired to the cart, survey findings, proposal split, build portal, transplant/retainer, checkpoint band, split wilt, world labels, copy mask, lens shift (cameras solved by projection), per-beat posters, reduced-motion demand canvas with stepper, mobile process bar and lot map, rest throttling.
-- [ ] Deploy the scroll-script build (includes the 404 fix)
+- [x] Deployed the scroll-script build (includes the 404 fix). Zone edencorp.org is active; https://edencorp.org serves the site, www redirects to apex.
 
 ## 12. Hosting and deploy (Cloudflare)
 - Static export (`next build`, `output: "export"`) -> `out/`. Worker `worker/index.ts` (dependency-free validation in `lib/qualify/validate.ts`) serves assets via the ASSETS binding with `run_worker_first: true`, handles `POST /api/qualify`, redirects www -> apex, serves 404 page.
-- Worker name `edencorp`, account `c0b73c3ccdc2ce15a8c173dff06e572a`, zone edencorp.org `bff7c30aad84b8c47d5bc41d04293164` (status pending until registrar nameservers are changed to christian.ns.cloudflare.com + joan.ns.cloudflare.com; original ns1/ns2.dns-parking.com).
+- Worker name `edencorp`, account `c0b73c3ccdc2ce15a8c173dff06e572a`, zone edencorp.org `bff7c30aad84b8c47d5bc41d04293164` (active; nameservers christian.ns.cloudflare.com + joan.ns.cloudflare.com).
 - Custom domains attached: edencorp.org, www.edencorp.org. Preview URL: https://edencorp.samplayz2ks.workers.dev
 - Secret `DISCORD_WEBHOOK_URL` stored on the Worker (secret_text). Redeploys use `keep_bindings: ["secret_text"]`.
 - Deploy procedure without an API token (the MCP OAuth connection cannot mint tokens): 1) `next build`; esbuild-bundle worker minified; 2) compute manifest (blake3 of base64(content)+ext, first 32 hex; skip root `_headers`); 3) MCP: POST `/workers/scripts/edencorp/assets-upload-session` with manifest -> jwt + buckets; 4) locally POST buckets to `api.cloudflare.com/.../workers/assets/upload?base64=true` with `Authorization: Bearer <jwt>` (NODE_USE_ENV_PROXY=1) -> completion jwt; 5) MCP: PUT script multipart (metadata: main_module, compatibility_date, assets {jwt, config incl. `_headers` text}, bindings [assets ASSETS], keep_bindings) with sha256 check of the code string.
