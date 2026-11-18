@@ -2,6 +2,7 @@
  * GLSL for the "Cultivated Ground" field.
  * Colours are authored in display space (the canvas renders with linear output, no tone mapping).
  */
+import { CHECK_Z, LOT_HALF, OWN_RECT, SEAM_X } from "./lots";
 
 export const FIELD = {
   minX: -20,
@@ -9,13 +10,18 @@ export const FIELD = {
   minZ: -30,
   maxZ: 13.5,
   rowSpacing: 0.66,
-  /** Parcel that is transplanted during "Own": plot 2, |z| < 4, moved by +x. */
-  parcelShift: 17,
 } as const;
+
+const f = (n: number) => n.toFixed(3);
 
 const common = /* glsl */ `
   const vec3 SURVEY = vec3(1.0, 0.353, 0.122);
-  const vec3 INK = vec3(0.047, 0.059, 0.051);
+  const vec3 BONE = vec3(0.86, 0.867, 0.835);
+  const float LOT_HALF = ${f(LOT_HALF)};
+  const float CHECK_Z = ${f(CHECK_Z)};
+  const float SEAM_X = ${f(SEAM_X)};
+
+  uniform vec2 uLotC[8];
 
   float terrain(vec2 p) {
     return 0.55 * sin(p.x * 0.14 + 1.0) * cos(p.y * 0.11 - 0.4)
@@ -23,10 +29,35 @@ const common = /* glsl */ `
          + 0.16 * sin(p.y * 0.47 + p.x * 0.09);
   }
 
+  // Survey potential: terrain plus a "stuck" knot at every lot, so contours bunch where the problems are.
+  float potential(vec2 p) {
+    float pot = terrain(p) * 6.0;
+    for (int i = 0; i < 8; i++) {
+      vec2 d = p - uLotC[i];
+      pot += 2.2 * exp(-dot(d, d) / 5.0);
+    }
+    return pot;
+  }
+
   float hash12(vec2 p) {
     vec3 p3 = fract(vec3(p.xyx) * 0.1031);
     p3 += dot(p3, p3.yzx + 33.33);
     return fract((p3.x + p3.y) * p3.z);
+  }
+`;
+
+const fragCommon = /* glsl */ `
+  uniform vec4 uCopyRect;
+  uniform float uCopyMask;
+  uniform float uDpr;
+
+  // Darken the field itself behind the active copy block (device pixels, gl_FragCoord space).
+  float copyMask() {
+    vec2 c = (uCopyRect.xy + uCopyRect.zw) * 0.5;
+    vec2 h = max((uCopyRect.zw - uCopyRect.xy) * 0.5, vec2(0.0));
+    vec2 q = abs(gl_FragCoord.xy - c) - h;
+    float d = length(max(q, 0.0)) + min(max(q.x, q.y), 0.0);
+    return (1.0 - smoothstep(0.0, 140.0 * uDpr, d)) * uCopyMask;
   }
 `;
 
@@ -41,24 +72,37 @@ export const bladeVertex = /* glsl */ `
   uniform float uHuman;
   uniform float uSurvey;
   uniform float uLots;
-  uniform float uPlots;
-  uniform float uCap;
+  uniform float uBuild;
+  uniform float uFocus;
+  uniform float uRetainer;
+  uniform float uTend;
+  uniform float uStaticTend;
   uniform float uEnergy;
+  uniform float uLowTier;
   uniform vec2 uPointer;
   uniform vec2 uFog;
+  uniform vec2 uLotDest[8];
+  uniform float uLotSel[8];
+  uniform float uLotGrow[8];
+  uniform float uLotSlot[8];
+  uniform float uLotPulse[8];
+  uniform float uLotHover;
 
   attribute vec2 aWild;
   attribute vec2 aRow;
   attribute vec4 aRand;
-  attribute vec2 aMeta; // x: plot id (0..3), y: row index
+  attribute vec2 aMeta; // x: lot index (-1 none, 0..7), y: row index
 
   varying float vT;
   varying float vTone;
   varying float vAccent;
   varying float vGlow;
-  varying float vHi;
   varying float vFog;
   varying float vSide;
+  varying float vWilt;
+  varying float vFocus;
+  varying float vDone;
+  varying float vSun;
 
   float backOut(float t) {
     float s = 1.9;
@@ -70,40 +114,65 @@ export const bladeVertex = /* glsl */ `
     float t = position.y;
 
     // The comb: a front sweeping +x. Behind it, blades spring into their rows.
-    float front = mix(${FIELD.minX.toFixed(1)} - 4.0, ${FIELD.maxX.toFixed(1)} + 4.0, uComb) + step(0.999, uComb) * 60.0;
+    float front = mix(${f(FIELD.minX)} - 4.0, ${f(FIELD.maxX)} + 4.0, uComb) + step(0.999, uComb) * 60.0;
     float local = clamp((front - aWild.x) / 3.2, 0.0, 1.0);
     float order = backOut(local);
     float orderS = clamp(order, 0.0, 1.0);
 
-    // Wilt: cheap systems. A random subset falls back out of order.
-    float fall = step(aRand.w, uWilt * 0.55);
+    // Built twice: only the cheap half (east of the seam) falls apart over time.
+    float cheap = smoothstep(SEAM_X - 0.3, SEAM_X + 0.3, aRow.x);
+    float fall = step(aRand.w, uWilt * 0.85) * cheap;
     float orderEff = order * (1.0 - fall * 0.9);
     vec2 base = mix(aWild, aRow, orderEff);
 
-    // Transplant: one parcel lifts out and settles in its own fenced plot.
-    float parcel = step(abs(aMeta.x - 2.0), 0.1) * step(abs(aRow.y), 4.0) * step(0.5, orderS);
-    float liftE = smoothstep(0.0, 1.0, uLift);
-    base.x += liftE * parcel * ${FIELD.parcelShift.toFixed(1)};
-    float arc = sin(3.14159 * clamp(uLift, 0.0, 1.0)) * parcel * 2.2;
+    // Lot membership.
+    float sel = 0.0;
+    float grow = 1.0;
+    float hov = 0.0;
+    float slot = 0.0;
+    float pulse = 99.0;
+    vec2 lc = vec2(0.0);
+    vec2 dst = vec2(0.0);
+    if (aMeta.x > -0.5) {
+      int li = int(aMeta.x + 0.5);
+      sel = uLotSel[li];
+      grow = uLotGrow[li];
+      slot = uLotSlot[li];
+      pulse = uLotPulse[li];
+      lc = uLotC[li];
+      dst = uLotDest[li];
+      hov = 1.0 - step(0.5, abs(uLotHover - aMeta.x));
+    }
+
+    // Handover: each built lot lifts out and settles in its slot in "Your infrastructure".
+    float moving = sel * step(0.5, orderS);
+    float l = clamp(uLift * 1.5 - slot * 0.07, 0.0, 1.0) * moving;
+    float le = smoothstep(0.0, 1.0, l);
+    base = mix(base, base - lc + dst, le);
+    float arc = sin(3.14159 * l) * 2.0;
 
     float ground = terrain(base);
 
     float hWild = 0.42 + aRand.x * 0.8;
     float hRow = 0.62 + aRand.x * 0.12;
-    float H = mix(hWild, hRow, orderS) * uGrow * (1.0 - fall * uWilt * 0.5);
-    float w = 0.036 * (1.0 - t * 0.88);
+    float H = mix(hWild, hRow, orderS) * uGrow * (1.0 - fall * uWilt * 0.6);
+    float signedOff = step(0.999, grow) * uBuild;
+    H *= mix(1.0, mix(0.22, 2.6, grow), sel * uBuild);
 
+    float w = 0.036 * (1.0 - t * 0.88) * mix(1.0, 1.4, uLowTier);
     float ang = mix(aRand.z * 6.2831, 0.0, orderS);
     vec2 side = vec2(cos(ang), sin(ang));
 
-    // Two motion registers: incoherent wild sway vs phase-locked rows.
+    // Two motion registers: incoherent wild sway vs a phase-locked wave.
+    // With a person in the loop, the wave waits at the checkpoint band and then continues.
     float ph = aRand.y * 6.2831;
     vec2 wDir = normalize(vec2(cos(ph + uTime * 0.35), sin(ph * 1.7 + uTime * 0.27)) + vec2(0.55, 0.0));
     float wBend = 0.24 + 0.16 * sin(uTime * 1.25 + ph * 3.0) + 0.08 * sin(uTime * 2.7 + ph * 5.0);
-    float wave = sin(uTime * 1.5 - base.y * 0.38 + base.x * 0.015);
+    float gate = smoothstep(CHECK_Z - 0.3, CHECK_Z + 0.3, base.y);
+    float wave = sin(uTime * 1.5 - base.y * 0.38 + base.x * 0.015 + gate * uHuman * 1.4);
     vec2 bend = mix(wDir * wBend, vec2(0.025 + 0.035 * wave, -0.06 - 0.16 * wave), orderS);
 
-    bend += (vec2(0.3, 0.5) * fall + vec2(0.04, 0.14)) * uWilt;
+    bend += (vec2(0.45, 0.6) * fall + vec2(0.06, 0.18) * cheap) * uWilt;
 
     // Pointer: parts the wild field; sends synchronised ripples down ordered rows.
     vec2 d = base - uPointer;
@@ -113,6 +182,13 @@ export const bladeVertex = /* glsl */ `
     float ring = sin(dist * 2.3 - uTime * 6.5) * exp(-dist * 0.3) * (1.0 - smoothstep(5.0, 13.0, dist));
     vec2 pushRow = vec2(ring * 0.32, 0.0);
     bend += mix(pushWild, pushRow, orderS) * uEnergy;
+
+    // One-shot ripple when a lot is added to the cart (600ms).
+    if (pulse < 0.6) {
+      float ld = length(base - lc);
+      float r = sin(ld * 3.0 - pulse * 14.0) * (1.0 - pulse / 0.6) * (1.0 - smoothstep(0.0, 4.0, abs(ld - pulse * 9.0)));
+      bend.x += r * 0.35;
+    }
 
     float bl = length(bend);
     if (bl > 0.95) bend *= 0.95 / bl;
@@ -129,25 +205,36 @@ export const bladeVertex = /* glsl */ `
     vSide = position.x;
     vTone = aRand.x * 0.6 + aRand.w * 0.4;
     vFog = smoothstep(uFog.x, uFog.y, -mv.z);
+    vWilt = fall * uWilt;
 
-    // Accents (all survey orange).
-    float humanRow = step(abs(mod(aMeta.y, 7.0) - 3.0), 0.1) * uHuman * orderS;
-    vec2 lot = floor((aRow + vec2(20.0, 30.0)) / 5.0);
-    float picked = step(hash12(lot + 3.0), 0.26) * uLots * orderS;
-    float c = ground * 6.0;
-    float lens = 1.0 - smoothstep(2.0, 5.5, dist);
-    float surveyHit = (1.0 - smoothstep(0.0, 0.12, abs(fract(c + 0.5) - 0.5))) * uSurvey * (0.35 + 0.65 * lens);
-    vAccent = max(max(max(humanRow, picked * 0.85), surveyHit), parcel * liftE * 0.55);
+    // Accents (all survey orange, each with a meaning stated in copy).
+    float tipBand = smoothstep(0.55, 0.9, t);
+    float band = (1.0 - smoothstep(0.35, 0.75, abs(base.y - CHECK_Z))) * uHuman * orderS;
+    float humanAcc = band * smoothstep(0.2, 0.6, t);
+    float surveyHit = 0.0;
+    #ifdef SURVEY_BLADES
+      float c = potential(base);
+      float lens = 1.0 - smoothstep(2.5, 6.5, dist);
+      surveyHit = (1.0 - smoothstep(0.0, 0.12, abs(fract(c + 0.5) - 0.5))) * uSurvey * (0.12 + 0.88 * lens);
+    #endif
+    float cartAcc = sel * uLots * tipBand * (1.0 - signedOff);
+    float tendAcc = moving * uRetainer * uStaticTend * tipBand * (1.0 - le);
+    vAccent = max(max(humanAcc, surveyHit), max(cartAcc, tendAcc));
+
+    // Comb front glow, plus the retainer's tending pass (the same comb, repeated).
     vGlow = exp(-abs(front - base.x) * 0.9) * (1.0 - fall);
+    float tf = mix(-12.0, 12.0, uTend);
+    vGlow += exp(-abs(base.x - tf) * 1.2) * moving * uRetainer * 0.8 * (1.0 - le) * (1.0 - uStaticTend);
 
-    float onPlot = step(abs(aMeta.x - (uCap - 1.0)), 0.1);
-    vHi = uCap > 0.5 ? (onPlot * 2.0 - 1.0) : 0.0;
-    vHi += uPlots * (mod(aMeta.x, 2.0) * 0.18 - 0.09);
+    vFocus = mix(1.0, 0.55, uFocus * (1.0 - sel)) * (1.0 + 0.25 * hov);
+    vDone = sel * signedOff;
+    vSun = 0.5 + 0.5 * dot(normalize(bend + vec2(1e-3)), normalize(vec2(-0.4, -1.0)));
   }
 `;
 
 export const bladeFragment = /* glsl */ `
   ${common}
+  ${fragCommon}
 
   uniform float uDim;
   uniform vec3 uHorizon;
@@ -156,20 +243,29 @@ export const bladeFragment = /* glsl */ `
   varying float vTone;
   varying float vAccent;
   varying float vGlow;
-  varying float vHi;
   varying float vFog;
   varying float vSide;
+  varying float vWilt;
+  varying float vFocus;
+  varying float vDone;
+  varying float vSun;
 
   void main() {
     vec3 root = vec3(0.03, 0.038, 0.033);
     vec3 tip = mix(vec3(0.5, 0.52, 0.48), vec3(0.88, 0.89, 0.85), vTone);
+    tip = mix(tip, vec3(0.26, 0.27, 0.25), vWilt);
     vec3 col = mix(root, tip, pow(vT, 1.25));
-    // Fake cylindrical shading across the blade.
+    // Fake cylindrical shading across the blade, and a low sun catching the tips.
     col *= 0.82 + 0.18 * (1.0 - abs(vSide) * 2.0);
-    col *= 1.0 + clamp(vHi, -0.5, 1.0) * 0.55;
+    col *= mix(1.0, 0.85 + 0.3 * vSun, step(0.5, vT));
     col = mix(col, SURVEY * (0.3 + 0.8 * vT), clamp(vAccent, 0.0, 1.0));
     col += SURVEY * vGlow * (0.25 + vT) * 1.1;
+    col = mix(col, vec3(0.95, 0.95, 0.91) * (0.3 + 0.8 * vT), vDone * 0.6);
+    col *= vFocus;
     col *= uDim;
+    col *= mix(1.0, 0.32, copyMask());
+    // Back-rim: the far edge reads as a silhouette rather than a grey band.
+    col += uHorizon * 1.6 * pow(vT, 3.0) * vFog * 0.5;
     col = mix(col, uHorizon, vFog);
     gl_FragColor = vec4(col, 1.0);
   }
@@ -192,18 +288,25 @@ export const groundVertex = /* glsl */ `
 
 export const groundFragment = /* glsl */ `
   ${common}
+  ${fragCommon}
 
-  uniform float uTime;
   uniform float uComb;
   uniform float uSurvey;
   uniform float uLots;
-  uniform float uPlots;
-  uniform float uFence;
+  uniform float uBuild;
+  uniform float uFocus;
   uniform float uOwn;
-  uniform float uCap;
+  uniform float uOwnDraw;
+  uniform float uWiltGate;
+  uniform float uSentFlash;
   uniform float uDim;
   uniform vec2 uPointer;
   uniform vec3 uHorizon;
+  uniform float uLotSel[8];
+  uniform float uLotFound[8];
+  uniform float uLotFlash[8];
+  uniform float uLotGrow[8];
+  uniform float uLotHover;
 
   varying vec3 vWorld;
   varying float vFog;
@@ -226,57 +329,74 @@ export const groundFragment = /* glsl */ `
   void main() {
     vec2 p = vWorld.xz;
     float h = terrain(p);
-    float field = step(${FIELD.minX.toFixed(1)}, p.x) * step(p.x, ${FIELD.maxX.toFixed(1)})
-                * step(${FIELD.minZ.toFixed(1)}, p.y) * step(p.y, ${FIELD.maxZ.toFixed(1)});
+    float field = step(${f(FIELD.minX)}, p.x) * step(p.x, ${f(FIELD.maxX)})
+                * step(${f(FIELD.minZ)}, p.y) * step(p.y, ${f(FIELD.maxZ)});
 
     vec3 col = vec3(0.036, 0.044, 0.039) + 0.01 * h + 0.012 * (hash12(floor(p * 6.0)) - 0.5);
 
     // Tilled furrows appear behind the comb front.
-    float front = mix(${FIELD.minX.toFixed(1)} - 4.0, ${FIELD.maxX.toFixed(1)} + 4.0, uComb) + step(0.999, uComb) * 60.0;
+    float front = mix(${f(FIELD.minX)} - 4.0, ${f(FIELD.maxX)} + 4.0, uComb) + step(0.999, uComb) * 60.0;
     float tilled = smoothstep(front, front - 2.5, p.x) * field;
-    float f = fract((p.x - ${FIELD.minX.toFixed(1)}) / ${FIELD.rowSpacing.toFixed(2)});
-    float ridge = 1.0 - smoothstep(0.0, 0.32, abs(f - 0.5));
-    col += vec3(0.022, 0.024, 0.02) * ridge * tilled;
-    col -= vec3(0.012) * (1.0 - ridge) * tilled;
+    float fr = fract((p.x - ${f(FIELD.minX)}) / ${f(FIELD.rowSpacing)});
+    float ridge = 1.0 - smoothstep(0.0, 0.32, abs(fr - 0.5));
+    col += vec3(0.035, 0.037, 0.032) * ridge * tilled;
+    col -= vec3(0.014) * (1.0 - ridge) * tilled;
+    col += SURVEY * exp(-abs(p.x - front) * 2.6) * field * 0.85;
 
-    float frontLine = exp(-abs(p.x - front) * 2.6) * field;
-    col += SURVEY * frontLine * 0.85;
+    // Built twice: the seam between the two halves.
+    float fwx = max(fwidth(p.x), 1e-4);
+    col += vec3(0.25) * (1.0 - smoothstep(0.0, 1.5, abs(p.x - SEAM_X) / fwx)) * uWiltGate * field;
 
-    // Survey: contour lines + grid, strongest inside the cursor lens.
+    // Survey: contours bunch around the eight stuck points; strongest inside the cursor lens.
     float lens = 1.0 - smoothstep(2.5, 6.5, length(p - uPointer));
-    float contour = aaLine(h * 6.0, 0.6);
-    col = mix(col, SURVEY * 0.8, contour * uSurvey * (0.3 + 0.7 * lens));
-    float grid = max(aaLine(p.x / 4.0, 0.4), aaLine(p.y / 4.0, 0.4));
-    col += vec3(0.08, 0.085, 0.08) * grid * uSurvey * 0.6 * field;
+    float contour = aaLine(potential(p), 0.6);
+    col = mix(col, SURVEY * 0.8, contour * uSurvey * (0.12 + 0.88 * lens) * field);
 
-    // Capability plots: four bands across x.
-    float plotLine = aaLine((p.x - ${FIELD.minX.toFixed(1)}) / 10.0, 0.8) * field;
-    col += vec3(0.5, 0.51, 0.48) * plotLine * max(uPlots, step(0.5, uCap));
-    float plotId = floor((p.x - ${FIELD.minX.toFixed(1)}) / 10.0);
-    float onPlot = step(abs(plotId - (uCap - 1.0)), 0.1) * step(0.5, uCap) * field;
-    col += SURVEY * onPlot * 0.06;
+    // The eight lots.
+    float inSel = 0.0;
+    for (int i = 0; i < 8; i++) {
+      vec2 mn = uLotC[i] - vec2(LOT_HALF);
+      vec2 mx = uLotC[i] + vec2(LOT_HALF);
+      float o = rectOutline(p, mn, mx, 1.0);
+      float inside = step(mn.x, p.x) * step(p.x, mx.x) * step(mn.y, p.y) * step(p.y, mx.y);
+      float sel = uLotSel[i];
+      float hov = 1.0 - step(0.5, abs(uLotHover - float(i)));
+      float signedOff = step(0.999, uLotGrow[i]) * uBuild * sel;
+      // Found during the survey: orange outline that flashes in.
+      col = mix(col, SURVEY, o * uLotFound[i] * (0.45 + 0.55 * uLotFlash[i]) * uSurvey);
+      // Storefront: unselected lots outlined bone, selected filled and outlined orange.
+      float edgeSurvey = max(sel * (1.0 - signedOff), hov * 0.6);
+      col = mix(col, BONE * 0.45, o * uLots * (1.0 - edgeSurvey) * 0.3 * (1.0 - signedOff));
+      col = mix(col, SURVEY, o * uLots * edgeSurvey * (0.8 + 0.2 * uSentFlash));
+      col += SURVEY * inside * sel * uLots * (0.09 + 0.1 * uSentFlash) * (1.0 - signedOff);
+      // Signed off: calm, solid bone outline.
+      col = mix(col, BONE * 0.8, o * signedOff);
+      inSel = max(inSel, inside * sel);
+    }
+    col *= mix(1.0, 0.55, uFocus * (1.0 - inSel) * field);
 
-    // Storefront lots: priced parcels, a few picked.
-    vec2 lp = (p - vec2(${FIELD.minX.toFixed(1)}, ${FIELD.minZ.toFixed(1)})) / 5.0;
-    float lotGrid = max(aaLine(lp.x, 0.5), aaLine(lp.y, 0.5)) * field;
-    float picked = step(hash12(floor(lp) + 3.0), 0.26) * field;
-    col += vec3(0.14, 0.145, 0.135) * lotGrid * uLots;
-    col += SURVEY * picked * uLots * 0.07;
-
-    // The gate: a fence around the whole field with an opening at the front.
-    float fence = rectOutline(p, vec2(${FIELD.minX.toFixed(1)} - 0.4, ${FIELD.minZ.toFixed(1)} - 0.4), vec2(${FIELD.maxX.toFixed(1)} + 0.4, ${FIELD.maxZ.toFixed(1)} + 0.4), 1.2);
-    float gate = 1.0 - step(abs(p.x), 1.6) * step(${FIELD.maxZ.toFixed(1)}, p.y);
-    col += SURVEY * fence * gate * uFence * 1.6;
-
-    // Your infrastructure: a separate fenced plot the parcel moves into.
-    vec2 omn = vec2(${(0 + FIELD.parcelShift - 0.5).toFixed(1)}, -4.5);
-    vec2 omx = vec2(${(10 + FIELD.parcelShift + 0.5).toFixed(1)}, 4.5);
-    float own = rectOutline(p, omn, omx, 1.0);
+    // Your infrastructure: separate ground, outline drawn clockwise as a single line.
+    vec2 omn = vec2(${f(OWN_RECT.minX)}, ${f(OWN_RECT.minZ)});
+    vec2 omx = vec2(${f(OWN_RECT.maxX)}, ${f(OWN_RECT.maxZ)});
+    float W = omx.x - omn.x;
+    float D = omx.y - omn.y;
+    float P = 2.0 * (W + D);
+    float dTop = abs(p.y - omn.y);
+    float dRight = abs(p.x - omx.x);
+    float dBot = abs(p.y - omx.y);
+    float dLeft = abs(p.x - omn.x);
+    float m = min(min(dTop, dRight), min(dBot, dLeft));
+    float s = (2.0 * W + D + omx.y - p.y) / P;
+    if (m == dTop) s = (p.x - omn.x) / P;
+    else if (m == dRight) s = (W + p.y - omn.y) / P;
+    else if (m == dBot) s = (W + D + omx.x - p.x) / P;
+    float own = rectOutline(p, omn, omx, 1.0) * step(s, uOwnDraw);
     float ownIn = step(omn.x, p.x) * step(p.x, omx.x) * step(omn.y, p.y) * step(p.y, omx.y);
-    col += vec3(0.75, 0.76, 0.72) * own * uOwn * 0.8;
-    col += vec3(0.02) * ownIn * uOwn;
+    col += vec3(0.75, 0.76, 0.72) * own * uOwn * 0.85;
+    col += vec3(0.018) * ownIn * uOwn * step(0.99, uOwnDraw);
 
     col *= mix(1.0, uDim, 0.6);
+    col *= mix(1.0, 0.32, copyMask());
     col = mix(col, uHorizon, vFog);
     gl_FragColor = vec4(col, 1.0);
   }
@@ -297,7 +417,6 @@ export const skyFragment = /* glsl */ `
   void main() {
     vec3 top = vec3(0.043, 0.054, 0.047);
     float k = smoothstep(-0.02, 0.32, vDir.y);
-    vec3 col = mix(uHorizon, top, k);
-    gl_FragColor = vec4(col, 1.0);
+    gl_FragColor = vec4(mix(uHorizon, top, k), 1.0);
   }
 `;

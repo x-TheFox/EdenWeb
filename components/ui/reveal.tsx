@@ -3,12 +3,13 @@
 import { motion, useReducedMotion } from "motion/react";
 import type { ReactNode } from "react";
 
+/** Section reveal: y 16px + opacity, 700ms expo-out. Reduced motion: opacity only. No blur (costly over WebGL). */
 export function Reveal({
   children,
   delay = 0,
   className,
   as = "div",
-  y = 28,
+  y = 16,
 }: {
   children: ReactNode;
   delay?: number;
@@ -21,13 +22,13 @@ export function Reveal({
   return (
     <M
       className={className}
-      initial={{ opacity: 0, y, filter: "blur(6px)" }}
-      whileInView={{ opacity: 1, y: 0, filter: "blur(0px)" }}
-      viewport={{ once: true, amount: 0.35 }}
+      initial={{ opacity: 0, y }}
+      whileInView={{ opacity: 1, y: 0 }}
+      viewport={{ once: true, amount: 0.3 }}
       transition={
         reduce
-          ? { opacity: { duration: 0.4, delay }, y: { duration: 0 }, filter: { duration: 0 } }
-          : { duration: 0.9, delay, ease: [0.16, 1, 0.3, 1] }
+          ? { opacity: { duration: 0.3, delay }, y: { duration: 0 } }
+          : { duration: 0.7, delay, ease: [0.16, 1, 0.3, 1] }
       }
     >
       {children}

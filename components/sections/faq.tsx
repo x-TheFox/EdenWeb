@@ -16,7 +16,7 @@ export const faqs = [
 
 export function Faq() {
   return (
-    <section id="faq" aria-labelledby="faq-title" className="relative bg-ink/85 pb-[clamp(6rem,14vh,9rem)]">
+    <section id="faq" aria-labelledby="faq-title" className="relative bg-ink/85 pb-[clamp(4rem,10vh,6rem)] pt-[clamp(3rem,8vh,5rem)]">
       <div className="shell grid gap-12 lg:grid-cols-12">
         <div className="lg:col-span-4">
           <Reveal>

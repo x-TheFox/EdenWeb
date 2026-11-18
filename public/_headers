@@ -8,9 +8,6 @@
 /_next/static/*
   Cache-Control: public, max-age=31536000, immutable
 
-/video/*
-  Cache-Control: public, max-age=2592000
-
 /scene/*
   Cache-Control: public, max-age=2592000
 

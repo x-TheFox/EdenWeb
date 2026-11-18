@@ -2,7 +2,7 @@
 
 import { useMotionValueEvent, useScroll } from "motion/react";
 import type { RefObject } from "react";
-import { sceneStore, type StoryKey } from "./scene-store";
+import { progressChanged, sceneStore, type StoryKey } from "./scene-store";
 
 /**
  * Reports a section's scroll progress to the scene.
@@ -15,6 +15,7 @@ export function useStage(key: StoryKey, ref: RefObject<HTMLElement | null>, mode
   });
   useMotionValueEvent(scrollYProgress, "change", (v) => {
     sceneStore.progress[key] = v;
+    progressChanged();
   });
   return scrollYProgress;
 }

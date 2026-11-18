@@ -1,3 +1,4 @@
+import { StageSection } from "@/components/scene/stage-section";
 import { Reveal } from "@/components/ui/reveal";
 
 const data = [
@@ -9,9 +10,10 @@ const data = [
 
 export function Security() {
   return (
-    <section id="security" aria-labelledby="security-title" className="relative bg-ink/85 py-[clamp(6rem,16vh,10rem)]">
-      <div className="shell grid gap-16 lg:grid-cols-12">
-        <div className="lg:col-span-5">
+    <StageSection stage="security" id="security" labelledBy="security-title" className="relative py-[clamp(5rem,12vh,8rem)]">
+      <div className="pointer-events-none absolute inset-0 bg-gradient-to-b from-transparent via-ink/70 to-ink/85" />
+      <div className="shell relative grid gap-16 lg:grid-cols-12">
+        <div data-copy className="lg:col-span-5">
           <Reveal>
             <h2 id="security-title" className="h2 max-w-[11ch] text-bone">Your ground. Your walls.</h2>
           </Reveal>
@@ -28,7 +30,7 @@ export function Security() {
             <ul className="mt-6 grid gap-x-10 gap-y-8 sm:grid-cols-2">
               {data.map((x, i) => (
                 <Reveal as="li" key={x.t} delay={i * 0.06}>
-                  <span aria-hidden className="block h-px w-8 bg-survey" />
+                  <span aria-hidden className="block h-px w-8 bg-bone-dim" />
                   <p className="mt-4 text-[1.08rem] text-bone">{x.t}</p>
                   <p className="mt-2 text-[0.95rem] text-bone-dim">{x.d}</p>
                 </Reveal>
@@ -57,6 +59,6 @@ export function Security() {
           </div>
         </div>
       </div>
-    </section>
+    </StageSection>
   );
 }

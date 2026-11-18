@@ -1,24 +1,30 @@
-import { StageSection } from "@/components/scene/stage-section";
-import { Reveal } from "@/components/ui/reveal";
+"use client";
+
+import { useRef } from "react";
+import { useStage } from "@/components/scene/use-stage";
+import { ProposalSplit } from "@/components/storefront/proposal-split";
 import { StorefrontDemo } from "@/components/storefront/storefront-demo";
 
+/** B6a (pinned split) then B6b (the live storefront, wired to the lots in the field). */
 export function Storefront() {
+  const ref = useRef<HTMLElement>(null);
+  const progress = useStage("storefront", ref, "pinned");
   return (
-    <StageSection stage="storefront" id="storefront" labelledBy="storefront-title" className="relative py-[clamp(6rem,16vh,10rem)]">
-      <div className="pointer-events-none absolute inset-0 bg-gradient-to-b from-transparent via-ink/85 to-ink/85" />
-      <div className="shell relative">
-        <Reveal>
-          <h2 id="storefront-title" className="h2 max-w-[14ch] text-bone">This is how you&rsquo;ll buy it.</h2>
-        </Reveal>
-        <Reveal delay={0.08}>
-          <p className="lede mt-5 max-w-[34rem]">
-            After the audit you get a private storefront like this one, with every feature priced. Try it.
-          </p>
-        </Reveal>
-        <Reveal delay={0.12} className="mt-12">
+    <div id="storefront" className="relative">
+      <section ref={ref} aria-labelledby="storefront-title" className="relative h-[110vh] md:h-[120vh]">
+        <div className="sticky top-0 h-[100svh] overflow-hidden">
+          <div className="scrim-t pointer-events-none absolute inset-x-0 top-0 h-[65%] md:hidden" />
+          <div className="scrim-l pointer-events-none absolute inset-y-0 left-0 hidden w-[52%] md:block" />
+          <div className="shell relative pt-[88px] md:pt-[16vh]">
+            <ProposalSplit progress={progress} />
+          </div>
+        </div>
+      </section>
+      <section aria-label="Example storefront" className="relative pb-[clamp(4rem,10vh,6rem)] pt-[clamp(2rem,6vh,4rem)]">
+        <div className="shell relative">
           <StorefrontDemo />
-        </Reveal>
-      </div>
-    </StageSection>
+        </div>
+      </section>
+    </div>
   );
 }

@@ -133,6 +133,7 @@ lib/
 ## 5. Information architecture
 
 Single narrative home page + `/privacy` + 404. Anchor ids: `#work`, `#process`, `#storefront`, `#security`, `#faq`, `#fit`.
+Order (see SCROLL-SCRIPT.md section 2): Hero, Comb (pinned), Statement (pinned split wilt), Capabilities (ledger), then inside ProcessNav: Qualify, Survey (pinned), Storefront (pinned proposal split + live demo), Build (pinned portal), Own (pinned); then Security, Proof (off), FAQ, Fit check, Footer.
 Nav (one line, 64px, floating, transparent over scene, ink backdrop after scroll): mark+wordmark | Work, Process, Storefront, Security, FAQ | **Check fit** (pill). Mobile: menu button -> full overlay with staggered links.
 CTA labels (one per intent): primary "Check fit" (-> #fit) everywhere. Secondary "See how it works" (-> #process) only in hero.
 
@@ -219,9 +220,8 @@ CTA labels (one per intent): primary "Check fit" (-> #fit) everywhere. Secondary
 ### Footer
 - Mark + "Edencorp" / Bespoke AI and software engineering. / founder@edencorp.org / Privacy / © {current year} Edencorp
 
-## 7. Video (Remotion, `/video`)
-1. `BuildUpdates` (1280x800, 30fps, ~12s loop): a generic channel (our design language, no third-party branding) receiving build updates for the fictional Marlowe Freight build, beside a portal panel with feature progress and revision rounds. Label in page: "Example build updates". Used in process Build step. MP4 (h264) + WebM (vp9) + poster.
-2. `FieldLoop` (optional, if @remotion/three renders headless): low-power hero fallback loop of the field. If it fails, ship poster only and note it here.
+## 7. Video
+No video ships (decided in docs/SCROLL-SCRIPT.md section 4). The Build step uses the live, scroll-scrubbed Build portal (`components/sections/build-portal.tsx`) driven by the visitor's own cart. The Remotion workspace and `public/video/*` were removed.
 
 ## 8. Form backend
 - `POST /api/qualify`: zod validate, honeypot -> pretend success, simple in-memory rate limit (5/min/IP), deliver via `lib/qualify/deliver.ts`.
@@ -240,9 +240,9 @@ CTA labels (one per intent): primary "Check fit" (-> #fit) everywhere. Secondary
 - [x] Scaffold, scene, sections, storefront demo, form, Remotion BuildUpdates, posters
 - [x] Review pass 1 (fixed: posters had baked-in HTML text; reduced-motion hydration mismatch in comb + Reveal; field front edge; mark)
 - [x] Deployed to Cloudflare Workers (see section 12)
-- [ ] Scroll script from creative-director pass: docs/SCROLL-SCRIPT.md (client feedback: visuals must earn their place; videos currently feel pointless)
-- [ ] Implement scroll script, review pass 2, redeploy
-- [ ] Pending small fix already in code, not yet deployed: 404 fallback fetches "/404" (assets redirect "/404.html")
+- [x] Scroll script written: docs/SCROLL-SCRIPT.md. It now supersedes sections 4 (stage table), 5 (section order) and 6 (copy) where they differ. The script is the source of truth for beats, stage keys, drivers, lots and copy.
+- [x] Scroll script implemented in full (P0, P1, P2): 8 lots wired to the cart, survey findings, proposal split, build portal, transplant/retainer, checkpoint band, split wilt, world labels, copy mask, lens shift (cameras solved by projection), per-beat posters, reduced-motion demand canvas with stepper, mobile process bar and lot map, rest throttling.
+- [ ] Deploy the scroll-script build (includes the 404 fix)
 
 ## 12. Hosting and deploy (Cloudflare)
 - Static export (`next build`, `output: "export"`) -> `out/`. Worker `worker/index.ts` (dependency-free validation in `lib/qualify/validate.ts`) serves assets via the ASSETS binding with `run_worker_first: true`, handles `POST /api/qualify`, redirects www -> apex, serves 404 page.

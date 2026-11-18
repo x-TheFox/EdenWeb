@@ -198,3 +198,53 @@
     transition: none;
   }
 }
+
+/* World labels: position is written per frame; fade is CSS. */
+.wl .wl-inner {
+  opacity: 0;
+  transform: translate(-50%, calc(-100% + 6px));
+  transition: opacity 200ms var(--ease-out-expo), transform 300ms var(--ease-out-expo);
+}
+.wl[data-on="1"] .wl-inner {
+  opacity: 1;
+  transform: translate(-50%, -100%);
+  transition-duration: 300ms;
+}
+.wl[data-sel="1"] .wl-pill {
+  color: var(--color-survey);
+}
+@media (prefers-reduced-motion: reduce) {
+  .wl .wl-inner,
+  .wl[data-on="1"] .wl-inner {
+    transition: none;
+  }
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .scroll-line {
+    animation: draw-down 900ms var(--ease-out-expo) 2.3s both;
+  }
+}
+@keyframes draw-down {
+  from {
+    transform: scaleY(0);
+  }
+  to {
+    transform: scaleY(1);
+  }
+}
+
+/* Fallback scrims. With the live scene, the field darkens itself behind copy (copy mask), so scrims stay light. */
+.scrim-t {
+  background: linear-gradient(180deg, rgb(12 15 13 / 0.92) 0%, rgb(12 15 13 / 0.75) 45%, rgb(12 15 13 / 0) 100%);
+}
+html:has([data-scene="live"]) .scrim-l {
+  background: linear-gradient(90deg, rgb(12 15 13 / 0.55) 0%, rgb(12 15 13 / 0.25) 45%, rgb(12 15 13 / 0) 75%);
+}
+html:has([data-scene="poster"]) .scrim-l,
+html:has([data-scene="pending"]) .scrim-l {
+  background: linear-gradient(90deg, rgb(12 15 13 / 0.9) 0%, rgb(12 15 13 / 0.7) 40%, rgb(12 15 13 / 0) 70%);
+}
+html:has([data-scene="poster"]) .poster-only {
+  display: grid;
+}
