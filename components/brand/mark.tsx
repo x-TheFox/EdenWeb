@@ -2,7 +2,7 @@
 export function Mark({ className = "", title }: { className?: string; title?: string }) {
   return (
     <svg
-      viewBox="0 0 28 24"
+      viewBox="0 -1 28 25"
       className={className}
       role={title ? "img" : undefined}
       aria-hidden={title ? undefined : true}
@@ -12,7 +12,8 @@ export function Mark({ className = "", title }: { className?: string; title?: st
       <rect x="2" y="19" width="24" height="2.2" rx="0.4" fill="currentColor" />
       <rect x="2" y="13.4" width="17.3" height="2.2" rx="0.4" fill="currentColor" />
       <rect x="2" y="7.8" width="10.6" height="2.2" rx="0.4" fill="currentColor" />
-      <path d="M11.4 7.8 C11.6 5.4 12.6 3.4 14.6 1.6" stroke="var(--color-survey)" strokeWidth="1.9" strokeLinecap="round" />
+      <path d="M11.2 8.4 C11.4 5.2 12.9 2.6 16.2 0.9" stroke="var(--color-survey)" strokeWidth="2.6" strokeLinecap="round" />
+      <path d="M12.4 4.6 C10.6 3.2 9.2 3.1 7.9 3.6" stroke="var(--color-survey)" strokeWidth="2.2" strokeLinecap="round" />
     </svg>
   );
 }

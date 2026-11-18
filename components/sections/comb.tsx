@@ -1,7 +1,7 @@
 "use client";
 
 import { motion, useReducedMotion, useTransform } from "motion/react";
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { sceneStore } from "@/components/scene/scene-store";
 import { useStage } from "@/components/scene/use-stage";
 
@@ -21,7 +21,11 @@ const modes = {
 export function Comb() {
   const ref = useRef<HTMLElement>(null);
   const progress = useStage("comb", ref, "pinned");
-  const reduce = useReducedMotion();
+  const prefersReduced = useReducedMotion();
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => setMounted(true), []);
+  // Read the preference only after hydration so server and client markup match.
+  const reduce = mounted && !!prefersReduced;
   const [mode, setMode] = useState<keyof typeof modes>("auto");
 
   // Before the comb: the problem. After: the answer.
@@ -44,12 +48,12 @@ export function Comb() {
           <div className="relative min-h-[14rem] max-w-[44rem]">
             <motion.p
               aria-hidden
-              style={reduce ? undefined : { opacity: beforeO, y: beforeY }}
+              style={reduce ? { opacity: 0, y: 0 } : { opacity: beforeO, y: beforeY }}
               className={`h2 absolute inset-x-0 top-0 text-bone ${reduce ? "hidden" : ""}`}
             >
               Most of the week is the same task, done again.
             </motion.p>
-            <motion.div style={reduce ? undefined : { opacity: afterO, y: afterY }}>
+            <motion.div style={reduce ? { opacity: 1, y: 0 } : { opacity: afterO, y: afterY }}>
               <h2 id="comb-title" className="h2 text-bone">
                 <span className="sr-only">Most of the week is the same task, done again. </span>
                 We take it over. <span className="text-survey">Row by row.</span>
@@ -97,7 +101,7 @@ export function Comb() {
 
         <motion.ul
           aria-label="Examples of repetitive work"
-          style={reduce ? undefined : { opacity: labelsO }}
+          style={reduce ? { opacity: 1 } : { opacity: labelsO }}
           className="shell pointer-events-none absolute inset-x-0 bottom-[7vh] hidden grid-cols-6 gap-4 md:grid"
         >
           {rows.map((r) => (

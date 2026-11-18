@@ -1,20 +1,12 @@
-import "server-only";
-import type { Qualification } from "./schema";
+import type { Submission } from "./validate";
 
 /**
  * Delivery adapter for fit-check submissions.
- * Currently posts to a Discord channel via webhook (env DISCORD_WEBHOOK_URL).
+ * Currently posts to a Discord channel via webhook (Worker secret DISCORD_WEBHOOK_URL).
  * To move to a CRM or email provider, replace this function only.
  */
-export async function deliver(q: Qualification, meta: { ip?: string; ua?: string }) {
-  const url = process.env.DISCORD_WEBHOOK_URL;
-  if (!url) {
-    if (process.env.NODE_ENV !== "production") {
-      console.info("[qualify] DISCORD_WEBHOOK_URL not set; submission logged only:", q.company);
-      return;
-    }
-    throw new Error("Delivery is not configured");
-  }
+export async function deliver(q: Submission, meta: { ua?: string }, url: string | undefined) {
+  if (!url) throw new Error("Delivery is not configured");
 
   const clip = (s: string, n = 1024) => (s.length > n ? `${s.slice(0, n - 3)}...` : s);
   // Discord markdown is harmless here, but stop accidental mass mentions.

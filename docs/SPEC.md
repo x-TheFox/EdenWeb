@@ -237,13 +237,17 @@ CTA labels (one per intent): primary "Check fit" (-> #fit) everywhere. Secondary
 
 ## 11. Progress log
 - [x] Concept chosen, spec written
-- [ ] Scaffold
-- [ ] Scene
-- [ ] Sections + copy
-- [ ] Storefront demo
-- [ ] Form + Discord
-- [ ] Remotion videos
-- [ ] Posters
-- [ ] Review pass 1
-- [ ] Review pass 2
-- [ ] Deploy (awaiting approval)
+- [x] Scaffold, scene, sections, storefront demo, form, Remotion BuildUpdates, posters
+- [x] Review pass 1 (fixed: posters had baked-in HTML text; reduced-motion hydration mismatch in comb + Reveal; field front edge; mark)
+- [x] Deployed to Cloudflare Workers (see section 12)
+- [ ] Scroll script from creative-director pass: docs/SCROLL-SCRIPT.md (client feedback: visuals must earn their place; videos currently feel pointless)
+- [ ] Implement scroll script, review pass 2, redeploy
+- [ ] Pending small fix already in code, not yet deployed: 404 fallback fetches "/404" (assets redirect "/404.html")
+
+## 12. Hosting and deploy (Cloudflare)
+- Static export (`next build`, `output: "export"`) -> `out/`. Worker `worker/index.ts` (dependency-free validation in `lib/qualify/validate.ts`) serves assets via the ASSETS binding with `run_worker_first: true`, handles `POST /api/qualify`, redirects www -> apex, serves 404 page.
+- Worker name `edencorp`, account `c0b73c3ccdc2ce15a8c173dff06e572a`, zone edencorp.org `bff7c30aad84b8c47d5bc41d04293164` (status pending until registrar nameservers are changed to christian.ns.cloudflare.com + joan.ns.cloudflare.com; original ns1/ns2.dns-parking.com).
+- Custom domains attached: edencorp.org, www.edencorp.org. Preview URL: https://edencorp.samplayz2ks.workers.dev
+- Secret `DISCORD_WEBHOOK_URL` stored on the Worker (secret_text). Redeploys use `keep_bindings: ["secret_text"]`.
+- Deploy procedure without an API token (the MCP OAuth connection cannot mint tokens): 1) `next build`; esbuild-bundle worker minified; 2) compute manifest (blake3 of base64(content)+ext, first 32 hex; skip root `_headers`); 3) MCP: POST `/workers/scripts/edencorp/assets-upload-session` with manifest -> jwt + buckets; 4) locally POST buckets to `api.cloudflare.com/.../workers/assets/upload?base64=true` with `Authorization: Bearer <jwt>` (NODE_USE_ENV_PROXY=1) -> completion jwt; 5) MCP: PUT script multipart (metadata: main_module, compatibility_date, assets {jwt, config incl. `_headers` text}, bindings [assets ASSETS], keep_bindings) with sha256 check of the code string.
+- `wrangler.jsonc` mirrors this config for a normal `wrangler deploy` once someone has a token.

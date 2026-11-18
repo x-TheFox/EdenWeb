@@ -15,18 +15,22 @@ const FieldCanvas = dynamic(() => import("./field-canvas"), { ssr: false });
 export function SceneBackdrop() {
   const reduced = useReducedMotion() ?? false;
   const [quality, setQuality] = useState<Quality | null>(null);
+  const [poster, setPoster] = useState(false);
   const [ready, setReady] = useState(false);
 
   useEffect(() => {
     const q = detectQuality();
-    if (q.tier === "none") return;
+    if (q.tier === "none" || reduced) {
+      setPoster(true);
+      return;
+    }
     // Let the page become interactive before pulling in three.js.
     const start = () => setQuality(q);
     const ric = (window as Window & { requestIdleCallback?: (cb: () => void, o?: { timeout: number }) => number })
       .requestIdleCallback;
     if (ric) ric(start, { timeout: 1200 });
     else setTimeout(start, 300);
-  }, []);
+  }, [reduced]);
 
   useEffect(() => {
     if (sceneStore.ready) {
@@ -60,14 +64,20 @@ export function SceneBackdrop() {
 
   return (
     <div aria-hidden className="pointer-events-none fixed inset-0 z-0 overflow-hidden bg-ink">
-      {/* eslint-disable-next-line @next/next/no-img-element */}
-      <img
-        src={reduced ? "/scene/poster-cultivated.webp" : "/scene/poster-wild.webp"}
-        alt=""
-        className="absolute inset-0 h-full w-full object-cover"
-        fetchPriority="high"
-        decoding="async"
-      />
+      <div className="absolute inset-0 bg-[linear-gradient(180deg,#0b0e0c_0%,#0f1310_48%,#151815_62%,#0c0f0d_100%)]" />
+      {poster && (
+        // eslint-disable-next-line @next/next/no-img-element
+        <img
+          src={reduced ? "/scene/poster-cultivated.webp" : "/scene/poster-wild.webp"}
+          alt=""
+          className="absolute inset-0 h-full w-full object-cover"
+          decoding="async"
+        />
+      )}
+      <noscript>
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img src="/scene/poster-wild.webp" alt="" className="absolute inset-0 h-full w-full object-cover" />
+      </noscript>
       {quality && !reduced && (
         <div
           className="absolute inset-0 transition-opacity duration-[1400ms] ease-[var(--ease-out-expo)]"

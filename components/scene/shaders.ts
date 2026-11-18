@@ -7,7 +7,7 @@ export const FIELD = {
   minX: -20,
   maxX: 20,
   minZ: -30,
-  maxZ: 10,
+  maxZ: 13.5,
   rowSpacing: 0.66,
   /** Parcel that is transplanted during "Own": plot 2, |z| < 4, moved by +x. */
   parcelShift: 17,
@@ -70,7 +70,7 @@ export const bladeVertex = /* glsl */ `
     float t = position.y;
 
     // The comb: a front sweeping +x. Behind it, blades spring into their rows.
-    float front = mix(${FIELD.minX.toFixed(1)} - 4.0, ${FIELD.maxX.toFixed(1)} + 4.0, uComb);
+    float front = mix(${FIELD.minX.toFixed(1)} - 4.0, ${FIELD.maxX.toFixed(1)} + 4.0, uComb) + step(0.999, uComb) * 60.0;
     float local = clamp((front - aWild.x) / 3.2, 0.0, 1.0);
     float order = backOut(local);
     float orderS = clamp(order, 0.0, 1.0);
@@ -137,7 +137,7 @@ export const bladeVertex = /* glsl */ `
     float c = ground * 6.0;
     float lens = 1.0 - smoothstep(2.0, 5.5, dist);
     float surveyHit = (1.0 - smoothstep(0.0, 0.12, abs(fract(c + 0.5) - 0.5))) * uSurvey * (0.35 + 0.65 * lens);
-    vAccent = max(max(humanRow, picked * 0.85), surveyHit);
+    vAccent = max(max(max(humanRow, picked * 0.85), surveyHit), parcel * liftE * 0.55);
     vGlow = exp(-abs(front - base.x) * 0.9) * (1.0 - fall);
 
     float onPlot = step(abs(aMeta.x - (uCap - 1.0)), 0.1);
@@ -232,7 +232,7 @@ export const groundFragment = /* glsl */ `
     vec3 col = vec3(0.036, 0.044, 0.039) + 0.01 * h + 0.012 * (hash12(floor(p * 6.0)) - 0.5);
 
     // Tilled furrows appear behind the comb front.
-    float front = mix(${FIELD.minX.toFixed(1)} - 4.0, ${FIELD.maxX.toFixed(1)} + 4.0, uComb);
+    float front = mix(${FIELD.minX.toFixed(1)} - 4.0, ${FIELD.maxX.toFixed(1)} + 4.0, uComb) + step(0.999, uComb) * 60.0;
     float tilled = smoothstep(front, front - 2.5, p.x) * field;
     float f = fract((p.x - ${FIELD.minX.toFixed(1)}) / ${FIELD.rowSpacing.toFixed(2)});
     float ridge = 1.0 - smoothstep(0.0, 0.32, abs(f - 0.5));
@@ -251,10 +251,10 @@ export const groundFragment = /* glsl */ `
 
     // Capability plots: four bands across x.
     float plotLine = aaLine((p.x - ${FIELD.minX.toFixed(1)}) / 10.0, 0.8) * field;
-    col += vec3(0.16, 0.165, 0.155) * plotLine * max(uPlots, step(0.5, uCap));
+    col += vec3(0.5, 0.51, 0.48) * plotLine * max(uPlots, step(0.5, uCap));
     float plotId = floor((p.x - ${FIELD.minX.toFixed(1)}) / 10.0);
     float onPlot = step(abs(plotId - (uCap - 1.0)), 0.1) * step(0.5, uCap) * field;
-    col += SURVEY * onPlot * 0.035;
+    col += SURVEY * onPlot * 0.06;
 
     // Storefront lots: priced parcels, a few picked.
     vec2 lp = (p - vec2(${FIELD.minX.toFixed(1)}, ${FIELD.minZ.toFixed(1)})) / 5.0;
@@ -266,7 +266,7 @@ export const groundFragment = /* glsl */ `
     // The gate: a fence around the whole field with an opening at the front.
     float fence = rectOutline(p, vec2(${FIELD.minX.toFixed(1)} - 0.4, ${FIELD.minZ.toFixed(1)} - 0.4), vec2(${FIELD.maxX.toFixed(1)} + 0.4, ${FIELD.maxZ.toFixed(1)} + 0.4), 1.2);
     float gate = 1.0 - step(abs(p.x), 1.6) * step(${FIELD.maxZ.toFixed(1)}, p.y);
-    col += SURVEY * fence * gate * uFence * 0.9;
+    col += SURVEY * fence * gate * uFence * 1.6;
 
     // Your infrastructure: a separate fenced plot the parcel moves into.
     vec2 omn = vec2(${(0 + FIELD.parcelShift - 0.5).toFixed(1)}, -4.5);
