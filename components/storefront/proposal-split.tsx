@@ -2,6 +2,7 @@
 
 import { motion, useReducedMotion, useTransform, type MotionValue } from "motion/react";
 import { useEffect, useState } from "react";
+import { TIMING } from "@/components/scene/scene-store";
 import { catalog, usd } from "./catalog";
 
 const TOTAL = catalog.reduce((s, f) => s + f.price, 0);
@@ -34,7 +35,7 @@ export function ProposalSplit({ progress }: { progress: MotionValue<number> }) {
   useEffect(() => setMounted(true), []);
   const reduce = mounted && !!prefersReduced;
 
-  const split = useTransform(progress, [0.15, 0.7], [0, 1], { clamp: true });
+  const split = useTransform(progress, [...TIMING.storefront.drive], [0, 1], { clamp: true });
   const strike = useTransform(split, [0, 0.35], [0, 1], { clamp: true });
   const totalO = useTransform(split, [0, 0.4], [1, 0.35], { clamp: true });
   const beforeO = useTransform(split, [0.25, 0.45], [1, 0], { clamp: true });

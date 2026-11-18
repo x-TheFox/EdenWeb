@@ -86,31 +86,58 @@ const clamp = (v: number) => Math.min(1, Math.max(0, v));
 const remap = (v: number, a: number, b: number) => clamp((v - a) / (b - a));
 
 /**
- * Stage index (0..9) that rises monotonically with scroll, and the drivers that scrub
- * the meaningful change inside each pinned hold.
+ * One timing table for the whole story. Every pinned beat has an "arrive" window (the camera travels,
+ * nothing else changes) and then a "drive" window (the meaningful change, scrubbed while the camera holds).
+ * Values are fractions of each section's own scroll progress. Sections, the scene and the DOM all read this,
+ * so copy, field and portal can never drift apart.
+ */
+export const TIMING = {
+  // Sizes below are tied to the section heights so that the camera never travels more than ~30 world
+  // units per screen of scroll, and every scrubbed change gets at least about one screen of its own.
+  comb: { drive: [0.14, 0.74] },
+  statement: { arrive: [0.02, 0.24], drive: [0.3, 0.86] },
+  capabilities: { arrive: [0.1, 0.5] },
+  qualify: { arrive: [0.1, 0.9] },
+  survey: { arrive: [0.0, 0.27], drive: [0.32, 0.92] },
+  storefront: { arrive: [0.0, 0.36], drive: [0.42, 0.9] },
+  build: { arrive: [0.0, 0.44], drive: [0.5, 0.94] },
+  own: { arrive: [0.0, 0.5], drive: [0.55, 0.92] },
+  security: { arrive: [0.0, 0.4] },
+} as const satisfies Record<StoryKey, { arrive?: readonly [number, number]; drive?: readonly [number, number] }>;
+
+/** Section progress at which a drive value d (0..1) is reached. */
+export const atDrive = (key: "comb" | "statement" | "survey" | "storefront" | "build" | "own", d: number) => {
+  const [a, b] = TIMING[key].drive;
+  return a + (b - a) * d;
+};
+
+/**
+ * Stage index (0..9) that rises monotonically with scroll.
  *  0 wild, 1 combed, 2 split, 3 rest, 4 qualify, 5 survey, 6 lots, 7 build, 8 own, 9 rest-own
  */
 export function storyStage(p: Record<StoryKey, number>) {
+  const r = (k: StoryKey, w: readonly [number, number]) => remap(p[k], w[0], w[1]);
   let s = 0;
-  s += remap(p.comb, 0.15, 0.7);
-  s += remap(p.statement, 0.02, 0.2);
-  s += remap(p.capabilities, 0.1, 0.45);
-  s += remap(p.qualify, 0.1, 0.9);
-  s += remap(p.survey, 0.0, 0.15);
-  s += remap(p.storefront, 0.0, 0.12);
-  s += remap(p.build, 0.0, 0.1);
-  s += remap(p.own, 0.0, 0.25);
-  s += remap(p.security, 0.0, 0.35);
+  s += r("comb", TIMING.comb.drive);
+  s += r("statement", TIMING.statement.arrive);
+  s += r("capabilities", TIMING.capabilities.arrive);
+  s += r("qualify", TIMING.qualify.arrive);
+  s += r("survey", TIMING.survey.arrive);
+  s += r("storefront", TIMING.storefront.arrive);
+  s += r("build", TIMING.build.arrive);
+  s += r("own", TIMING.own.arrive);
+  s += r("security", TIMING.security.arrive);
   return s;
 }
 
 export function storyDrivers(p: Record<StoryKey, number>): Drivers {
+  const r = (k: StoryKey, w: readonly [number, number]) => remap(p[k], w[0], w[1]);
   return {
-    comb: remap(p.comb, 0.15, 0.7),
-    wilt: remap(p.statement, 0.22, 0.85),
-    survey: remap(p.survey, 0.15, 0.9),
-    split: remap(p.storefront, 0.15, 0.7),
-    build: remap(p.build, 0.1, 0.85),
-    lift: remap(p.own, 0.25, 0.75),
+    comb: r("comb", TIMING.comb.drive),
+    wilt: r("statement", TIMING.statement.drive),
+    survey: r("survey", TIMING.survey.drive),
+    split: r("storefront", TIMING.storefront.drive),
+    build: r("build", TIMING.build.drive),
+    lift: r("own", TIMING.own.drive),
   };
 }

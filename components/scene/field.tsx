@@ -10,110 +10,13 @@ import { markSceneReady, sceneStore, storyDrivers, storyStage, type Drivers } fr
 import { FIELD, bladeFragment, bladeVertex, groundFragment, groundVertex, skyFragment, skyVertex } from "./shaders";
 import type { QualityTier } from "./quality";
 import { updateLabels } from "./world-labels";
-
-const HORIZON = new THREE.Color(0.082, 0.088, 0.08);
-
-/* -------------------------------------------------------------------------- */
-/* Stage keys (docs/SCROLL-SCRIPT.md section 2)                                */
-/* -------------------------------------------------------------------------- */
-
-type Key = {
-  pos: [number, number, number];
-  look: [number, number, number];
-  comb: number;
-  wilt: number;
-  survey: number;
-  lots: number;
-  build: number;
-  lift: number;
-  own: number;
-  focus: number;
-  dim: number;
-  rest: number;
-  shiftX: number;
-  shiftY: number;
-  fog: [number, number];
-};
-
-const base: Omit<Key, "pos" | "look"> = {
-  comb: 1,
-  wilt: 0,
-  survey: 0,
-  lots: 0,
-  build: 0,
-  lift: 0,
-  own: 0,
-  focus: 0,
-  dim: 1,
-  rest: 0,
-  shiftX: 0,
-  shiftY: 0,
-  fog: [10, 46],
-};
-
-// Camera x is offset by half a row spacing so no row sits on the view axis (no bright seam).
-const KEYS: Key[] = [
-  { ...base, pos: [-5.5, 1.7, 14.5], look: [1.5, -0.7, 0], comb: 0 },
-  { ...base, pos: [-0.2, 2.6, 14.5], look: [-0.2, -0.9, -6] },
-  { ...base, pos: [-1.2, 4.4, 12.5], look: [3.2, -0.6, -7], wilt: 1, dim: 0.9, shiftX: 0.04 },
-  { ...base, pos: [-0.2, 9, 22], look: [-0.2, 0, -8], dim: 0.42, rest: 1, fog: [18, 70] },
-  { ...base, pos: [-0.2, 28, 22], look: [-0.2, 0, -6.15], dim: 0.5, rest: 1, fog: [30, 85] },
-  // Survey, lots, build and own are framed by projection so the subject sits right of the copy and left of the rail.
-  { ...base, pos: [-0.2, 45.9, 18.3], look: [-0.2, 0, -6.15], survey: 1, dim: 0.75, shiftX: 0.15, shiftY: 0.05, fog: [40, 90] },
-  { ...base, pos: [-0.2, 68.6, 21.6], look: [-0.2, 0, -6.15], lots: 1, survey: 0.15, focus: 1, dim: 0.9, shiftX: 0.25, shiftY: 0.06, fog: [60, 125] },
-  { ...base, pos: [-0.2, 29.3, 44.5], look: [-0.2, 0, -6.15], lots: 1, focus: 1, build: 1, dim: 0.95, shiftX: 0.18, shiftY: 0.06, fog: [45, 110] },
-  { ...base, pos: [35.2, 35, 35.6], look: [35.2, 0, -6.15], lots: 1, build: 1, lift: 1, own: 1, focus: 0.6, dim: 0.95, shiftX: 0.07, shiftY: 0.02, fog: [40, 95] },
-  { ...base, pos: [36, 22, 40], look: [36, 0, -6.15], build: 1, lift: 1, own: 1, dim: 0.38, rest: 1, fog: [35, 90] },
-];
-
-const NUM: (keyof Omit<Key, "pos" | "look" | "fog">)[] = [
-  "comb",
-  "wilt",
-  "survey",
-  "lots",
-  "build",
-  "lift",
-  "own",
-  "focus",
-  "dim",
-  "rest",
-  "shiftX",
-  "shiftY",
-];
+import { KEYS, keyFor, sample } from "./keys";
 
 const smooth = (t: number) => t * t * (3 - 2 * t);
 const lerp = (a: number, b: number, t: number) => a + (b - a) * t;
 const clamp01 = (v: number) => Math.min(1, Math.max(0, v));
 
-function keyFor(i: number, mobile: boolean, low: boolean): Key {
-  const k = KEYS[i];
-  if (!mobile) return k;
-  const m: Key = { ...k, shiftX: 0 };
-  // Mobile: copy is top-anchored, so the subject sits in the lower part of the screen.
-  if (i >= 5 && i <= 7) Object.assign(m, { pos: [-0.2, 65.4, 31.6], look: [-0.2, 0, -6.15], shiftX: -0.045, shiftY: 0.19, fog: [50, 120] });
-  if (i === 8) Object.assign(m, { pos: [35.2, 46.3, 49], look: [35.2, 0, -6.15], shiftX: 0, shiftY: 0.16, fog: [50, 120] });
-  if (i === 1) m.pos = [-0.2, 3.0, 14.5];
-  if (low && i <= 2) m.fog = [8, 30];
-  return m;
-}
-
-function sample(stage: number, mobile: boolean, low: boolean) {
-  const s = Math.min(KEYS.length - 1, Math.max(0, stage));
-  const i = Math.min(KEYS.length - 2, Math.floor(s));
-  const f = s - i;
-  const a = keyFor(i, mobile, low);
-  const b = keyFor(i + 1, mobile, low);
-  const e = smooth(f);
-  const out = {} as Record<(typeof NUM)[number], number>;
-  for (const k of NUM) out[k] = lerp(a[k], b[k], e);
-  return {
-    v: out,
-    pos: [lerp(a.pos[0], b.pos[0], e), lerp(a.pos[1], b.pos[1], e), lerp(a.pos[2], b.pos[2], e)] as const,
-    look: [lerp(a.look[0], b.look[0], e), lerp(a.look[1], b.look[1], e), lerp(a.look[2], b.look[2], e)] as const,
-    fog: [lerp(a.fog[0], b.fog[0], e), lerp(a.fog[1], b.fog[1], e)] as const,
-    wiltGate: Math.max(0, 1 - Math.abs(s - 2)),
-  };
-}
+const HORIZON = new THREE.Color(0.082, 0.088, 0.08);
 
 /* -------------------------------------------------------------------------- */
 /* Geometry                                                                    */
@@ -250,6 +153,21 @@ function activeCopyRect(now: number) {
 
 const easeOutExpo = (t: number) => (t >= 1 ? 1 : 1 - Math.pow(2, -10 * t));
 
+/**
+ * Critically damped follow (smooth-damp). Unlike exponential lerp it starts and stops with zero
+ * velocity, so the camera eases into and out of every move instead of jolting when scrolling begins.
+ */
+function smoothDamp(cur: number, target: number, vel: { v: number }, smoothTime: number, dt: number) {
+  const omega = 2 / smoothTime;
+  const x = omega * dt;
+  const exp = 1 / (1 + x + 0.48 * x * x + 0.235 * x * x * x);
+  const change = cur - target;
+  const temp = (vel.v + omega * change) * dt;
+  vel.v = (vel.v - omega * temp) * exp;
+  return target + (change + temp) * exp;
+}
+const CAM_SMOOTH = 0.7; // seconds
+
 export function Field({ blades, reduced, tier }: { blades: number; reduced: boolean; tier: QualityTier }) {
   const { camera, gl, size } = useThree();
   const geometry = useMemo(() => buildBlades(blades), [blades]);
@@ -343,6 +261,7 @@ export function Field({ blades, reduced, tier }: { blades: number; reduced: bool
     camPos: new THREE.Vector3(...KEYS[0].pos),
     camLook: new THREE.Vector3(...KEYS[0].look),
     shift: new THREE.Vector2(),
+    vel: Array.from({ length: 8 }, () => ({ v: 0 })),
     pointer: new THREE.Vector2(999, 999),
     lastNdc: new THREE.Vector2(),
     energy: 0,
@@ -391,11 +310,11 @@ export function Field({ blades, reduced, tier }: { blades: number; reduced: bool
     const stage = reduced ? Math.round(rawStage) : rawStage;
     let drv: Drivers = storyDrivers(sceneStore.progress);
     if (reduced) drv = { comb: stage >= 1 ? 1 : 0, wilt: 1, survey: 1, split: 1, build: drv.build, lift: 1 };
-    const story = sample(stage, mobile, low);
+    const story = sample(stage, mobile, low, size.width, size.height);
     const v = story.v;
 
-    const k = reduced ? 1 : 1 - Math.exp(-dt * 3.2);
-    const kFast = reduced ? 1 : 1 - Math.exp(-dt * 9);
+    const k = reduced ? 1 : 1 - Math.exp(-dt * 2.6);
+    const kFast = reduced ? 1 : 1 - Math.exp(-dt * 6);
     const kCart = reduced ? 1 : 1 - Math.exp(-dt * 12);
 
     // Effective cart: an empty cart builds the example's default request.
@@ -447,7 +366,7 @@ export function Field({ blades, reduced, tier }: { blades: number; reduced: bool
     // Retainer: the camera follows the lots back to our ground instead of watching an empty plot.
     const ret = clamp01(1 - Math.abs(stage - 8)) * s.retainer;
     if (ret > 0) {
-      const b7 = keyFor(7, mobile, low);
+      const b7 = keyFor(7, mobile, low, size.width, size.height);
       story.pos = story.pos.map((x, j) => lerp(x, b7.pos[j], ret)) as unknown as typeof story.pos;
       story.look = story.look.map((x, j) => lerp(x, b7.look[j], ret)) as unknown as typeof story.look;
       v.shiftX = lerp(v.shiftX, b7.shiftX, ret);
@@ -458,13 +377,14 @@ export function Field({ blades, reduced, tier }: { blades: number; reduced: bool
     const p = sceneStore.pointer;
     const par = reduced ? 0 : 1 - v.rest;
     tmp.set(story.pos[0] + p.x * 0.55 * par, story.pos[1] + p.y * 0.25 * par, story.pos[2]);
-    s.camPos.lerp(tmp, k);
+    const sd = (cur: number, tgt: number, i: number) => (reduced ? tgt : smoothDamp(cur, tgt, s.vel[i], CAM_SMOOTH, dt));
+    s.camPos.set(sd(s.camPos.x, tmp.x, 0), sd(s.camPos.y, tmp.y, 1), sd(s.camPos.z, tmp.z, 2));
     tmp.set(...story.look);
-    s.camLook.lerp(tmp, k);
+    s.camLook.set(sd(s.camLook.x, tmp.x, 3), sd(s.camLook.y, tmp.y, 4), sd(s.camLook.z, tmp.z, 5));
     camera.position.copy(s.camPos);
     camera.lookAt(s.camLook);
-    s.shift.x = lerp(s.shift.x, v.shiftX, k);
-    s.shift.y = lerp(s.shift.y, v.shiftY, k);
+    s.shift.x = sd(s.shift.x, v.shiftX, 6);
+    s.shift.y = sd(s.shift.y, v.shiftY, 7);
     const cam = camera as THREE.PerspectiveCamera;
     cam.setViewOffset(size.width, size.height, -s.shift.x * size.width, -s.shift.y * size.height, size.width, size.height);
 
@@ -541,7 +461,7 @@ export function Field({ blades, reduced, tier }: { blades: number; reduced: bool
       lift: uniforms.uLift.value,
       mobile,
       avoid: copyBox.current,
-      avoidRight: !mobile && size.width >= 1024 && rawStage > 3.5 && rawStage < 8.5 ? 200 : 0,
+      avoidRight: !mobile && size.width >= 1280 && rawStage > 3.5 && rawStage < 8.5 ? Math.min(56, Math.max(16, size.width * 0.04)) + 150 : 0,
     });
 
     // Rest-state throttling: slow sway only, so render a frame every 250ms.

@@ -15,7 +15,7 @@ export function Build() {
   const reduce = mounted && !!prefersReduced;
 
   return (
-    <section ref={ref} id="step-build" aria-labelledby="build-title" className="relative h-[170vh] md:h-[180vh]">
+    <section ref={ref} id="step-build" aria-labelledby="build-title" className="relative h-[440vh]">
       <div className="sticky top-0 h-[100svh] overflow-hidden">
         <div className="scrim-t pointer-events-none absolute inset-x-0 top-0 h-[70%] md:hidden" />
         <div className="scrim-l pointer-events-none absolute inset-y-0 left-0 hidden w-[56%] md:block" />

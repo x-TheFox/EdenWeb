@@ -2,13 +2,14 @@
 
 import { AnimatePresence, motion, useMotionValueEvent, useReducedMotion } from "motion/react";
 import { useEffect, useRef, useState } from "react";
-import { sceneStore } from "@/components/scene/scene-store";
+import { TIMING, sceneStore } from "@/components/scene/scene-store";
 import { useStage } from "@/components/scene/use-stage";
 import { FINDINGS } from "@/lib/findings";
 import { StepHead } from "./step-head";
 
 const clockCount = (p: number) => {
-  const d = Math.min(1, Math.max(0, (p - 0.15) / 0.75));
+  const [a, b] = TIMING.survey.drive;
+  const d = Math.min(1, Math.max(0, (p - a) / (b - a)));
   let n = 0;
   for (let i = 0; i < 8; i++) if (d > 0.06 + i * 0.11) n++;
   return n;
@@ -54,7 +55,7 @@ export function Survey() {
   const shown = reduce ? 8 : count;
 
   return (
-    <section ref={ref} id="step-survey" aria-labelledby="survey-title" className="relative h-[180vh] md:h-[200vh]">
+    <section ref={ref} id="step-survey" aria-labelledby="survey-title" className="relative h-[360vh]">
       <div className="sticky top-0 h-[100svh] overflow-hidden">
         <div className="scrim-t pointer-events-none absolute inset-x-0 top-0 h-[60%] md:hidden" />
         <div className="scrim-l pointer-events-none absolute inset-y-0 left-0 hidden w-[52%] md:block" />

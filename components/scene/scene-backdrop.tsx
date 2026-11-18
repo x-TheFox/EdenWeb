@@ -6,6 +6,7 @@ import { useReducedMotion } from "motion/react";
 import { detectQuality, type Quality } from "./quality";
 import { sceneStore, storyStage } from "./scene-store";
 import { WorldLabels } from "./world-labels";
+import { sample } from "./keys";
 
 const FieldCanvas = dynamic(() => import("./field-canvas"), { ssr: false });
 
@@ -29,7 +30,16 @@ export function SceneBackdrop() {
   const lastPoster = useRef(posterFor(0));
   const lastStage = useRef(0);
 
-  useEffect(() => setMounted(true), []);
+  useEffect(() => {
+    setMounted(true);
+    // Test hook for pacing checks (?debug=1 only).
+    if (new URLSearchParams(window.location.search).has("debug"))
+      (window as unknown as { __eden: unknown }).__eden = {
+        store: sceneStore,
+        stage: () => storyStage(sceneStore.progress),
+        sample: (st: number, m: boolean, l: boolean) => sample(st, m, l, window.innerWidth, window.innerHeight),
+      };
+  }, []);
 
   useEffect(() => {
     if (!mounted) return;

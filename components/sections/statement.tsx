@@ -4,7 +4,7 @@ import { Reveal } from "@/components/ui/reveal";
 /** B2: same work, two builds. Scroll is time passing; only the cheap half decays (see the scene). */
 export function Statement() {
   return (
-    <StageSection stage="statement" mode="pinned" labelledBy="statement-title" className="relative h-[140vh] md:h-[160vh]">
+    <StageSection stage="statement" mode="pinned" labelledBy="statement-title" className="relative h-[220vh] md:h-[260vh]">
       <div className="sticky top-0 flex h-[100svh] flex-col overflow-hidden pt-[88px] md:justify-center md:pt-0">
         <div className="scrim-l pointer-events-none absolute inset-y-0 left-0 hidden w-[60%] md:block" />
         <div className="scrim-t pointer-events-none absolute inset-x-0 top-0 h-[75%] md:hidden" />

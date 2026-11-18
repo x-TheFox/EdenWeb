@@ -244,6 +244,12 @@ No video ships (decided in docs/SCROLL-SCRIPT.md section 4). The Build step uses
 - [x] Scroll script implemented in full (P0, P1, P2): 8 lots wired to the cart, survey findings, proposal split, build portal, transplant/retainer, checkpoint band, split wilt, world labels, copy mask, lens shift (cameras solved by projection), per-beat posters, reduced-motion demand canvas with stepper, mobile process bar and lot map, rest throttling.
 - [x] Deployed the scroll-script build (includes the 404 fix). Zone edencorp.org is active; https://edencorp.org serves the site, www redirects to apex.
 
+## 11b. Pacing rules (from the pacing pass)
+- One timing table, `TIMING` in `components/scene/scene-store.ts`. Every pinned beat has an `arrive` window (camera travels, nothing else changes) and a `drive` window (the scrubbed change while the camera holds). Copy, scene and portal all read it.
+- Camera travel is capped at about 30 world units per screen of scroll; every scrubbed change gets at least about one screen. Measure with `?debug=1` (exposes `window.__eden`) before changing heights or keys.
+- Camera follows its target with a critically damped smooth-damp (0.7s), position maps linearly to scroll; Lenis lerp 0.075, wheelMultiplier 0.85.
+- Lot beats (survey, choose, build, own) are framed at runtime from the real viewport (`components/scene/fit.ts`), so all eight lots fit between the copy and the step rail at any size. The rail shows from 1280px; below that the 5-segment progress bar is used.
+
 ## 12. Hosting and deploy (Cloudflare)
 - Static export (`next build`, `output: "export"`) -> `out/`. Worker `worker/index.ts` (dependency-free validation in `lib/qualify/validate.ts`) serves assets via the ASSETS binding with `run_worker_first: true`, handles `POST /api/qualify`, redirects www -> apex, serves 404 page.
 - Worker name `edencorp`, account `c0b73c3ccdc2ce15a8c173dff06e572a`, zone edencorp.org `bff7c30aad84b8c47d5bc41d04293164` (active; nameservers christian.ns.cloudflare.com + joan.ns.cloudflare.com).

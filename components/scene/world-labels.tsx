@@ -144,7 +144,7 @@ const DEFS: Def[] = [
   },
 ];
 
-type Entry = { def: Def; el: HTMLElement; on: boolean; tick?: HTMLElement; text: HTMLElement; sel: boolean };
+type Entry = { def: Def; el: HTMLElement; on: boolean; tick?: HTMLElement; text: HTMLElement; sel: boolean; w?: number };
 const registry: Entry[] = [];
 const v = new Vector3();
 
@@ -164,11 +164,11 @@ export function updateLabels(camera: Camera, width: number, height: number, ctx:
       y = (-v.y * 0.5 + 0.5) * height;
       if (x < -40 || x > width + 40 || y < -40 || y > height + 40) show = false;
     }
-    if (show && ctx.avoidRight && x + 90 > width - ctx.avoidRight) show = false;
+    if (show && ctx.avoidRight && x + (e.w || 90) / 2 > width - ctx.avoidRight) show = false;
     if (show && ctx.avoid) {
       const a = ctx.avoid;
-      // Label box: centred on x, above the anchor (pill + leader line).
-      const half = 90;
+      // Label box: centred on x, above the anchor (pill + leader line), using its real width.
+      const half = (e.w || (e.w = e.text.offsetWidth || 120)) / 2 + 6;
       const top = y - (def.line ?? 0) - 34;
       if (x + half > a.l && x - half < a.r && y > a.t && top < a.b) show = false;
     }
@@ -195,7 +195,10 @@ export function updateLabels(camera: Camera, width: number, height: number, ctx:
       e.el.dataset.on = "1";
     }
     const txt = ctx.mobile && e.def.mobileText ? e.def.mobileText : e.def.text;
-    if (e.text.textContent !== txt) e.text.textContent = txt;
+    if (e.text.textContent !== txt) {
+      e.text.textContent = txt;
+      e.w = 0;
+    }
     if (e.def.kind === "price" && e.def.lot !== undefined) {
       const sel = ctx.sel[e.def.lot] > 0.5;
       if (sel !== e.sel) {

@@ -2,7 +2,7 @@
 
 import { AnimatePresence, motion, useMotionValue, useMotionValueEvent, useTransform, type MotionValue } from "motion/react";
 import { useEffect, useMemo, useRef, useState } from "react";
-import { notify, sceneStore } from "@/components/scene/scene-store";
+import { TIMING, notify, sceneStore } from "@/components/scene/scene-store";
 import { DEMO_COMPANY, type Feature } from "@/components/storefront/catalog";
 import { hoverLot, useCart } from "@/components/storefront/cart-store";
 import { buildEvents, cartFeatures, featureProgress, statusFor, totalWeeks, type Status } from "@/lib/build-plan";
@@ -40,7 +40,7 @@ export function BuildPortal({ progress, reduce }: { progress: MotionValue<number
   const N = totalWeeks(features);
   const events = useMemo(() => buildEvents(features), [features]);
 
-  const driver = useTransform(progress, [0.1, 0.85], [0, 1], { clamp: true });
+  const driver = useTransform(progress, [...TIMING.build.drive], [0, 1], { clamp: true });
   const [step, setStep] = useState(N);
   const week = useMotionValue(0);
   const live = useRef({ reduce, step, N });

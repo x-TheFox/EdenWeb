@@ -13,7 +13,7 @@ const steps = [
 
 /**
  * Wraps the five process beats (B4 to B8). Desktop: a sticky step rail on the right edge.
- * Below 1024px: a 5-segment progress bar under the nav while the process is in view.
+ * Below 1280px: a 5-segment progress bar under the nav while the process is in view.
  */
 export function ProcessNav({ children }: { children: ReactNode }) {
   const ref = useRef<HTMLDivElement>(null);
@@ -42,7 +42,7 @@ export function ProcessNav({ children }: { children: ReactNode }) {
     <div ref={ref} className="relative">
       {children}
 
-      <div className="pointer-events-none absolute inset-0 hidden lg:block" aria-hidden>
+      <div className="pointer-events-none absolute inset-0 hidden xl:block" aria-hidden>
         <div className="sticky top-0 flex h-[100svh] items-center justify-end">
           <div className="shell flex justify-end">
             <ol className="flex flex-col gap-4">
@@ -69,7 +69,7 @@ export function ProcessNav({ children }: { children: ReactNode }) {
         {inView && (
           <motion.div
             aria-hidden
-            className="fixed inset-x-0 top-16 z-40 lg:hidden"
+            className="fixed inset-x-0 top-16 z-40 xl:hidden"
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}

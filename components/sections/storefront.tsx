@@ -11,7 +11,7 @@ export function Storefront() {
   const progress = useStage("storefront", ref, "pinned");
   return (
     <div id="storefront" className="relative">
-      <section ref={ref} aria-labelledby="storefront-title" className="relative h-[110vh] md:h-[120vh]">
+      <section ref={ref} aria-labelledby="storefront-title" className="relative h-[320vh]">
         <div className="sticky top-0 h-[100svh] overflow-hidden">
           <div className="scrim-t pointer-events-none absolute inset-x-0 top-0 h-[65%] md:hidden" />
           <div className="scrim-l pointer-events-none absolute inset-y-0 left-0 hidden w-[52%] md:block" />

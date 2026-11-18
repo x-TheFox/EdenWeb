@@ -2,7 +2,7 @@
 
 import { motion, useMotionValueEvent, useReducedMotion, useTransform } from "motion/react";
 import { useEffect, useRef, useState } from "react";
-import { notify, sceneStore } from "@/components/scene/scene-store";
+import { TIMING, atDrive, notify, sceneStore } from "@/components/scene/scene-store";
 import { useStage } from "@/components/scene/use-stage";
 
 const rows = ["Support tickets", "Data entry", "Outbound follow-ups", "Invoice matching", "QA test cases", "Order updates"];
@@ -33,15 +33,16 @@ export function Comb() {
   const [hintDone, setHintDone] = useState(false);
 
   // Before line stays until the comb front passes x = -6, then the answer arrives.
-  const beforeO = useTransform(progress, [0, 0.06, 0.4, 0.47], [0.35, 1, 1, 0]);
-  const beforeY = useTransform(progress, [0.4, 0.47], [0, -16]);
-  const afterO = useTransform(progress, [0.45, 0.55], [0, 1]);
-  const afterY = useTransform(progress, [0.45, 0.55], [20, 0]);
+  // Timings are expressed in comb-drive terms (0 = front at the left edge, 1 = field combed).
+  const beforeO = useTransform(progress, [0, 0.05, atDrive("comb", 0.32), atDrive("comb", 0.44)], [0.35, 1, 1, 0]);
+  const beforeY = useTransform(progress, [atDrive("comb", 0.32), atDrive("comb", 0.44)], [0, -16]);
+  const afterO = useTransform(progress, [atDrive("comb", 0.4), atDrive("comb", 0.58)], [0, 1]);
+  const afterY = useTransform(progress, [atDrive("comb", 0.4), atDrive("comb", 0.58)], [20, 0]);
   // The underline under "Row by row." IS the comb line: it tracks the front exactly.
-  const line = useTransform(progress, [0.15, 0.7], [0, 1]);
+  const line = useTransform(progress, [...TIMING.comb.drive], [0, 1]);
 
   useMotionValueEvent(progress, "change", (p) => {
-    const want = p > 0.75 && !hintDone && !(prefersReduced ?? false);
+    const want = p > TIMING.comb.drive[1] + 0.03 && !hintDone && !(prefersReduced ?? false);
     setHint((h) => (h === want ? h : want));
   });
 
@@ -70,7 +71,7 @@ export function Comb() {
   };
 
   return (
-    <section ref={ref} aria-labelledby="comb-title" className="relative h-[200vh] md:h-[220vh]">
+    <section ref={ref} aria-labelledby="comb-title" className="relative h-[300vh] md:h-[360vh]">
       <div className="sticky top-0 flex h-[100svh] flex-col overflow-hidden pt-[88px] md:justify-center md:pt-0">
         <div className="scrim-l pointer-events-none absolute inset-y-0 left-0 hidden w-[62%] md:block" />
         <div className="scrim-t pointer-events-none absolute inset-x-0 top-0 h-[70%] md:hidden" />

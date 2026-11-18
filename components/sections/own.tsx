@@ -30,7 +30,7 @@ export function Own() {
   };
 
   return (
-    <section ref={ref} id="step-own" aria-labelledby="own-title" className="relative h-[130vh] md:h-[140vh]">
+    <section ref={ref} id="step-own" aria-labelledby="own-title" className="relative h-[380vh]">
       <div className="sticky top-0 h-[100svh] overflow-hidden">
         <div className="scrim-t pointer-events-none absolute inset-x-0 top-0 h-[60%] md:hidden" />
         <div className="scrim-l pointer-events-none absolute inset-y-0 left-0 hidden w-[52%] md:block" />

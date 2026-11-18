@@ -8,7 +8,8 @@ export function SmoothScroll() {
   const reduce = useReducedMotion();
   useEffect(() => {
     if (reduce) return;
-    const lenis = new Lenis({ lerp: 0.11, anchors: { offset: -72 }, autoRaf: true });
+    // Lower lerp = more inertia; a slightly reduced wheel step keeps each flick from skipping a beat.
+    const lenis = new Lenis({ lerp: 0.075, wheelMultiplier: 0.85, anchors: { offset: -72 }, autoRaf: true });
     return () => lenis.destroy();
   }, [reduce]);
   return null;
