@@ -201,7 +201,6 @@ export function FitForm() {
     errors[k] ? `${uid}-${k}-error` : hint ? `${uid}-${k}-hint` : undefined;
 
   if (status === "done") {
-    const summary = `${v.company}: ${v.interests.join(", ")}. ${v.bottleneck}`;
     return (
       <div ref={topRef} className="scroll-mt-28">
         <motion.div
@@ -217,7 +216,7 @@ export function FitForm() {
           <p className="mt-6 font-display text-[clamp(2rem,4vw,3rem)] leading-none tracking-[-0.03em] text-bone">Received.</p>
           <p className="lede mt-4 max-w-[34rem]">Next, pick a time for the fit call. It takes 30 minutes.</p>
           <a
-            href={bookingLink({ name: v.name, email: v.email, notes: summary })}
+            href={bookingLink()}
             target="_blank"
             rel="noopener noreferrer"
             className="group mt-8 inline-flex items-center gap-3 rounded-full bg-survey py-2 pl-5 pr-2 font-medium text-survey-ink transition-[transform,background-color] duration-300 hover:bg-survey-soft active:scale-[0.97]"
