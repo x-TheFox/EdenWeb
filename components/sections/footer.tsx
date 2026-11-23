@@ -14,9 +14,11 @@ export function Footer() {
           <a href={`mailto:${site.email}`} className="text-bone transition-colors hover:text-survey">
             {site.email}
           </a>
-          <div className="flex gap-6 text-moss">
+          <div className="flex flex-wrap items-center gap-x-6 gap-y-2 text-moss">
+            <Link href="/about" className="transition-colors hover:text-bone">About</Link>
             <Link href="/privacy" className="transition-colors hover:text-bone">Privacy</Link>
             <span>&copy; {new Date().getFullYear()} Edencorp</span>
+            <a href="https://tin.computer" className="inline-flex items-center gap-1 transition-colors hover:text-bone"><svg aria-hidden="true" viewBox="0 0 32 32" className="size-[0.8em]"><rect width="32" height="32" fill="#66DC9D" /></svg>Growth by Tin</a>
           </div>
         </div>
       </div>
