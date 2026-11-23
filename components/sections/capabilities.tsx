@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { StageSection } from "@/components/scene/stage-section";
 import { Reveal } from "@/components/ui/reveal";
 
@@ -62,6 +63,16 @@ export function Capabilities() {
             <p className="max-w-[40rem] text-bone-dim">
               Buy one piece or all four. <span className="text-bone">Scope sets the price, never a package.</span>
             </p>
+          </Reveal>
+          <Reveal className="mt-6">
+            <nav aria-label="Explore Eden's work" className="flex flex-wrap gap-x-6 gap-y-3 text-[0.95rem]">
+              <Link href="/services/ai-agent-development" className="text-bone-dim underline decoration-line underline-offset-4 transition-colors hover:text-bone focus-visible:text-bone">
+                Explore AI agent development
+              </Link>
+              <Link href="/guides/ai-project-planning" className="text-bone-dim underline decoration-line underline-offset-4 transition-colors hover:text-bone focus-visible:text-bone">
+                Read the AI project planning guide
+              </Link>
+            </nav>
           </Reveal>
         </div>
       </div>
