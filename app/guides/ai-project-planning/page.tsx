@@ -56,7 +56,7 @@ export default function AiProjectPlanning() {
           <h2 className="h2 max-w-[12ch] text-bone">What to ask a build partner.</h2>
           <div className="max-w-[40rem]">
             <p className="lede">Ask how they will learn the work, test the first version, handle exceptions, and set the scope. Agree on ownership and running costs before development starts.</p>
-            <p className="mt-6 text-bone-dim">At Eden, the fit check starts that conversation. We study the work before proposing a project scope and price.</p>
+            <p className="mt-6 text-bone-dim">At Eden, the fit check starts that conversation. We study the work before proposing a project scope and price. <Link href="/guides/custom-ai-project-cost" className="text-bone underline decoration-survey underline-offset-4 hover:text-survey">See what shapes the cost</Link>.</p>
             <Link href="/#fit" className="mt-8 inline-block text-bone underline decoration-survey underline-offset-8 transition-colors hover:text-survey">Tell us what you want to build ↗</Link>
           </div>
         </section>
