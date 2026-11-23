@@ -14,6 +14,7 @@ import {
   type Qualification,
 } from "@/lib/qualify/schema";
 import { bookingLink, site } from "@/lib/site";
+import { captureFunnelEvent } from "@/lib/analytics";
 
 type Values = Omit<Qualification, "decision" | "size" | "budget" | "timeline" | "interests"> & {
   decision: string;
@@ -162,6 +163,7 @@ export function FitForm() {
 
   const next = () => {
     if (!validate(stepOne)) return;
+    captureFunnelEvent("fit_form_step_completed", { step: "1" });
     setStep(1);
     topRef.current?.scrollIntoView({ behavior: reduce ? "auto" : "smooth", block: "start" });
   };
@@ -169,7 +171,10 @@ export function FitForm() {
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (step === 0) return next();
-    if (!validate(stepTwo)) return;
+    if (!validate(stepTwo)) {
+      captureFunnelEvent("fit_form_submit_failed", { reason: "validation" });
+      return;
+    }
     setStatus("sending");
     setErrMsg("");
     try {
@@ -180,6 +185,7 @@ export function FitForm() {
       });
       const data = (await res.json().catch(() => ({}))) as { ok?: boolean; error?: string; issues?: Record<string, string[]> };
       if (res.ok && data.ok) {
+        captureFunnelEvent("fit_form_submitted");
         setStatus("done");
         topRef.current?.scrollIntoView({ behavior: reduce ? "auto" : "smooth", block: "start" });
         return;
@@ -191,9 +197,11 @@ export function FitForm() {
         if (Object.keys(errs).some((k) => k in stepOne.shape)) setStep(0);
       }
       setStatus("error");
+      captureFunnelEvent("fit_form_submit_failed", { reason: res.status === 429 ? "rate_limit" : "server" });
       setErrMsg(res.status === 429 && data.error ? data.error : "");
     } catch {
       setStatus("error");
+      captureFunnelEvent("fit_form_submit_failed", { reason: "network" });
     }
   };
 
