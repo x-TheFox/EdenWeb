@@ -51,7 +51,7 @@ export default function About() {
             <p className="lede">Tell us what is slowing you down. We use the fit check to decide whether a call makes sense. If it does, we discuss the work before setting a paid audit or build scope.</p>
             <p className="mt-8 border-t border-line pt-6 text-[0.9rem] text-bone-dim">Edencorp is not a registered legal entity.</p>
             <Link href="/#fit" className="mt-8 inline-block text-bone underline decoration-survey underline-offset-8 transition-colors hover:text-survey">Start with the fit check ↗</Link>
-            <p className="mt-6 text-[0.95rem] text-bone-dim">Planning a build? <Link href="/guides/ai-project-planning" className="text-bone underline decoration-survey underline-offset-4 hover:text-survey">Read the AI project planning guide</Link>.</p>
+            <p className="mt-6 text-[0.95rem] text-bone-dim">Explore <Link href="/services/ai-agent-development" className="text-bone underline decoration-survey underline-offset-4 hover:text-survey">AI agent development</Link> or <Link href="/guides/ai-project-planning" className="text-bone underline decoration-survey underline-offset-4 hover:text-survey">read the AI project planning guide</Link>.</p>
           </div>
         </section>
       </main>
