@@ -11,6 +11,7 @@ const links = [
   { href: "/#storefront", label: "Storefront" },
   { href: "/#security", label: "Security" },
   { href: "/#faq", label: "FAQ" },
+  { href: "/about", label: "About" },
 ];
 
 export function SiteNav() {
