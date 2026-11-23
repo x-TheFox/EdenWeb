@@ -68,7 +68,7 @@ export default function AiDevelopment() {
             <div className="max-w-[40rem]">
               <p className="lede">Describe the work and the result you want. We will discuss fit before setting a project scope and price.</p>
               <Link href="/#fit" className="mt-8 inline-block text-bone underline decoration-survey underline-offset-8 transition-colors hover:text-survey">Start the fit check ↗</Link>
-              <p className="mt-6 text-[0.95rem] text-bone-dim">Need a system that can act across tools? <Link href="/services/ai-agent-development" className="text-bone underline decoration-survey underline-offset-4 hover:text-survey">Explore AI agent development</Link>.</p>
+              <p className="mt-6 text-[0.95rem] text-bone-dim">Need a system that can act across tools? <Link href="/services/ai-agent-development" className="text-bone underline decoration-survey underline-offset-4 hover:text-survey">Explore AI agent development</Link>. Planning a budget? <Link href="/guides/custom-ai-project-cost" className="text-bone underline decoration-survey underline-offset-4 hover:text-survey">See what shapes the cost</Link>.</p>
             </div>
           </div>
         </section>
