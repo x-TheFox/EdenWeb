@@ -50,7 +50,6 @@ const jsonLd = {
   "@type": "Organization",
   name: site.name,
   url: site.url,
-  email: site.email,
   description: site.description,
 };
 
