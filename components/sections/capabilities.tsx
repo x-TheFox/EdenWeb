@@ -75,6 +75,9 @@ export function Capabilities() {
               <Link href="/services/ai-development" className="text-bone-dim underline decoration-line underline-offset-4 transition-colors hover:text-bone focus-visible:text-bone">
                 Explore AI development
               </Link>
+              <Link href="/services/ai-integration" className="text-bone-dim underline decoration-line underline-offset-4 transition-colors hover:text-bone focus-visible:text-bone">
+                Explore AI integration
+              </Link>
               <Link href="/services/ai-agent-development" className="text-bone-dim underline decoration-line underline-offset-4 transition-colors hover:text-bone focus-visible:text-bone">
                 Explore AI agent development
               </Link>
