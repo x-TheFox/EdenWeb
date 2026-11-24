@@ -66,6 +66,9 @@ export function Capabilities() {
           </Reveal>
           <Reveal className="mt-6">
             <nav aria-label="Explore Eden's work" className="flex flex-wrap gap-x-6 gap-y-3 text-[0.95rem]">
+              <Link href="/services" className="text-bone-dim underline decoration-line underline-offset-4 transition-colors hover:text-bone focus-visible:text-bone">
+                See all AI and software services
+              </Link>
               <Link href="/services/custom-software-development" className="text-bone-dim underline decoration-line underline-offset-4 transition-colors hover:text-bone focus-visible:text-bone">
                 Explore custom software development
               </Link>
