@@ -72,6 +72,8 @@ export default function Services() {
                   <p className="mt-3 text-bone-dim">{service.body}</p>
                   <Link href={service.href} className="mt-5 inline-block text-bone underline decoration-survey underline-offset-4 transition-colors hover:text-survey">{service.label} ↗</Link>
                   {service.number === "01" && <Link href="/services/ai-integration" className="ml-6 inline-block text-bone underline decoration-survey underline-offset-4 transition-colors hover:text-survey">Explore AI integration ↗</Link>}
+                  {service.number === "01" && <Link href="/services/ai-consulting" className="ml-6 inline-block text-bone underline decoration-survey underline-offset-4 transition-colors hover:text-survey">Explore AI consulting ↗</Link>}
+                  {service.number === "01" && <Link href="/services/ai-automation" className="ml-6 inline-block text-bone underline decoration-survey underline-offset-4 transition-colors hover:text-survey">Explore AI automation ↗</Link>}
                 </div>
               </div>
             ))}
