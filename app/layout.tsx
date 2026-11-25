@@ -3,6 +3,7 @@ import localFont from "next/font/local";
 import { GeistSans } from "geist/font/sans";
 import { GeistMono } from "geist/font/mono";
 import { site } from "@/lib/site";
+import { Analytics } from "@/components/analytics";
 import "./globals.css";
 
 const bricolage = localFont({
@@ -60,6 +61,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       className={`${bricolage.variable} ${GeistSans.variable} ${GeistMono.variable}`}
     >
       <body>
+        <Analytics />
         <a
           href="#main"
           className="sr-only focus:not-sr-only focus:fixed focus:left-4 focus:top-4 focus:z-[70] focus:rounded-full focus:bg-survey focus:px-4 focus:py-2 focus:text-survey-ink"
