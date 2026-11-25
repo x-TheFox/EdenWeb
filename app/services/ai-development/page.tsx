@@ -5,8 +5,8 @@ import { SiteNav } from "@/components/nav/site-nav";
 import { Footer } from "@/components/sections/footer";
 
 export const metadata: Metadata = {
-  title: "AI development agency",
-  description: "Edencorp builds custom AI systems and software around your work. Explore the approach and tell us what you need built.",
+  title: "Need an AI development agency?",
+  description: "Need a custom AI system or feature? Edencorp studies your work, builds around your tools, and starts with a project fit check.",
   alternates: { canonical: "/services/ai-development" },
 };
 
