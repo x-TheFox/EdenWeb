@@ -10,6 +10,8 @@ export default function sitemap(): MetadataRoute.Sitemap {
     { url: `${site.url}/services/ai-agent-development`, changeFrequency: "monthly", priority: 0.7 },
     { url: `${site.url}/services/ai-development`, changeFrequency: "monthly", priority: 0.7 },
     { url: `${site.url}/services/ai-integration`, changeFrequency: "monthly", priority: 0.7 },
+    { url: `${site.url}/services/ai-consulting`, changeFrequency: "monthly", priority: 0.7 },
+    { url: `${site.url}/services/ai-automation`, changeFrequency: "monthly", priority: 0.7 },
     { url: `${site.url}/services/custom-software-development`, changeFrequency: "monthly", priority: 0.7 },
     { url: `${site.url}/guides/ai-project-planning`, changeFrequency: "monthly", priority: 0.7 },
     { url: `${site.url}/guides/custom-ai-project-cost`, changeFrequency: "monthly", priority: 0.7 },
